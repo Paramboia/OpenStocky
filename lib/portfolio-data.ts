@@ -367,6 +367,30 @@ export function calculatePortfolioStats(livePrices?: Record<string, number>) {
     }
   }
 
+  // Best and worst performers
+  const sortedByGain = [...holdings].sort((a, b) => b.gainLossPercent - a.gainLossPercent)
+  const bestPerformer = sortedByGain[0] || null
+  const worstPerformer = sortedByGain[sortedByGain.length - 1] || null
+
+  // Largest holding by value
+  const largestHolding = holdings[0] || null
+
+  // Average gain/loss per position
+  const avgGainLossPercent = holdings.length > 0 
+    ? holdings.reduce((sum, h) => sum + h.gainLossPercent, 0) / holdings.length 
+    : 0
+
+  // Total return (unrealized + realized)
+  const totalReturn = totalGainLoss + realizedGains
+  const totalReturnPercent = totalCost > 0 ? (totalReturn / totalCost) * 100 : 0
+
+  // Winners vs Losers count
+  const winners = holdings.filter(h => h.gainLoss >= 0).length
+  const losers = holdings.filter(h => h.gainLoss < 0).length
+
+  // Total fees paid
+  const totalFees = transactions.reduce((sum, tx) => sum + tx.fees, 0)
+
   return {
     totalValue,
     totalCost,
@@ -375,6 +399,15 @@ export function calculatePortfolioStats(livePrices?: Record<string, number>) {
     realizedGains,
     holdingsCount: holdings.length,
     totalTransactions: transactions.length,
+    bestPerformer,
+    worstPerformer,
+    largestHolding,
+    avgGainLossPercent,
+    totalReturn,
+    totalReturnPercent,
+    winners,
+    losers,
+    totalFees,
   }
 }
 
