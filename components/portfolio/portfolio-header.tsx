@@ -49,7 +49,7 @@ export function PortfolioHeader() {
       </div>
 
       {/* Primary KPIs - Full Width Cards */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-card border-border">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
@@ -137,7 +137,7 @@ export function PortfolioHeader() {
           <CardTitle className="text-lg font-semibold text-foreground">Performance Metrics</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
+          <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
             <KpiTooltip content="Internal Rate of Return - Money-weighted annualized return accounting for timing and size of cash flows">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -243,7 +243,7 @@ export function PortfolioHeader() {
           <CardTitle className="text-lg font-semibold text-foreground">Portfolio Composition</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
+          <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
             <KpiTooltip content="Number of active positions in portfolio">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
