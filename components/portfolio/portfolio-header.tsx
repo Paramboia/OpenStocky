@@ -59,12 +59,12 @@ export function PortfolioHeader() {
                 <div>
                   <p className="text-sm text-muted-foreground">Unrealized P/L</p>
                   <div className="flex items-center gap-2">
-                    <p className={`text-2xl font-bold ${isPositive ? "text-primary" : "text-destructive"}`}>
-                      {isPositive ? "+" : ""}${stats.totalGainLoss.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <p className={`text-xl font-bold ${isPositive ? "text-primary" : "text-destructive"}`}>
+                      {isPositive ? "+" : ""}${Math.round(stats.totalGainLoss).toLocaleString("en-US")}
                     </p>
                     <span className={`flex items-center text-sm ${isPositive ? "text-primary" : "text-destructive"}`}>
                       {isPositive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-                      {Math.abs(stats.totalGainLossPercent).toFixed(2)}%
+                      {Math.abs(stats.totalGainLossPercent).toFixed(1)}%
                     </span>
                   </div>
                 </div>
@@ -86,8 +86,8 @@ export function PortfolioHeader() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Realized P/L</p>
-                  <p className={`text-2xl font-bold ${isRealizedPositive ? "text-primary" : "text-destructive"}`}>
-                    {isRealizedPositive ? "+" : ""}${stats.realizedGains.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <p className={`text-xl font-bold ${isRealizedPositive ? "text-primary" : "text-destructive"}`}>
+                    {isRealizedPositive ? "+" : ""}${Math.round(stats.realizedGains).toLocaleString("en-US")}
                   </p>
                 </div>
               </div>
