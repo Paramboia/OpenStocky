@@ -159,7 +159,14 @@ export function TransactionsTable() {
                     <div className="relative overflow-hidden">
                       <div
                         className="absolute inset-0 flex items-center justify-end gap-2 bg-destructive px-4 text-destructive-foreground transition-opacity duration-200"
-                        style={{ opacity: (rowOffsets[tx.id] ?? 0) <= revealThreshold ? 1 : 0 }}
+                        style={{
+                          opacity: (rowOffsets[tx.id] ?? 0) <= revealThreshold ? 1 : 0,
+                          pointerEvents: (rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? "auto" : "none",
+                        }}
+                        role="button"
+                        tabIndex={(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? 0 : -1}
+                        aria-label={`Delete transaction ${tx.symbol} ${formatDate(tx.date)}`}
+                        onClick={() => handleDelete(tx.id)}
                       >
                         <Trash2 className="h-5 w-5" />
                         <span className="text-sm font-semibold">Delete</span>
@@ -206,17 +213,6 @@ export function TransactionsTable() {
                           <span className="text-right font-medium">
                             ${tx.transactionCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
-                          {(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset && (
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleDelete(tx.id)}
-                              aria-label={`Delete transaction ${tx.symbol} ${formatDate(tx.date)}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
                         </div>
                       </div>
                     </div>
