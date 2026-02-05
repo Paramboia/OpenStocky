@@ -4,8 +4,12 @@ import { useMemo } from "react"
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { transactions, currentPrices } from "@/lib/portfolio-data"
+import { useStockPrices } from "@/lib/stock-price-context"
 
 export function PerformanceChart() {
+  const { prices: livePrices } = useStockPrices()
+  const prices = Object.keys(livePrices).length > 0 ? livePrices : currentPrices
+
   const chartData = useMemo(() => {
     // Group transactions by month and calculate cumulative portfolio value
     const monthlyData: { month: string; invested: number; holdings: Map<string, { shares: number; avgCost: number }> }[] = []
@@ -59,7 +63,7 @@ export function PerformanceChart() {
       let estimatedValue = 0
       d.holdings.forEach((h, symbol) => {
         if (h.shares > 0) {
-          const price = currentPrices[symbol] || h.totalCost / h.shares
+          const price = prices[symbol] || currentPrices[symbol] || h.totalCost / h.shares
           estimatedValue += h.shares * price
         }
       })
@@ -70,7 +74,7 @@ export function PerformanceChart() {
         value: Math.max(0, estimatedValue),
       }
     }).slice(-24) // Last 24 months
-  }, [])
+  }, [prices])
 
   const formatMonth = (month: string) => {
     const [year, m] = month.split("-")

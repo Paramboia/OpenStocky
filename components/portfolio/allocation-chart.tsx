@@ -3,6 +3,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { calculateHoldings } from "@/lib/portfolio-data"
+import { useStockPrices } from "@/lib/stock-price-context"
 
 const COLORS = [
   "hsl(142, 76%, 46%)",
@@ -18,7 +19,8 @@ const COLORS = [
 ]
 
 export function AllocationChart() {
-  const holdings = calculateHoldings()
+  const { prices } = useStockPrices()
+  const holdings = calculateHoldings(prices)
   const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0)
 
   const chartData = holdings

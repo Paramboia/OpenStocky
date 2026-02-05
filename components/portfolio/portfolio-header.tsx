@@ -3,10 +3,12 @@
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Activity } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { calculatePortfolioStats, calculateHoldings } from "@/lib/portfolio-data"
+import { useStockPrices } from "@/lib/stock-price-context"
 
 export function PortfolioHeader() {
-  const stats = calculatePortfolioStats()
-  const holdings = calculateHoldings()
+  const { prices } = useStockPrices()
+  const stats = calculatePortfolioStats(prices)
+  const holdings = calculateHoldings(prices)
 
   const isPositive = stats.totalGainLoss >= 0
   const isRealizedPositive = stats.realizedGains >= 0

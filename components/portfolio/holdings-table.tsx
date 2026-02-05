@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { calculateHoldings, type Holding } from "@/lib/portfolio-data"
+import { useStockPrices } from "@/lib/stock-price-context"
 
 type SortKey = keyof Holding
 type SortDirection = "asc" | "desc"
@@ -23,7 +24,8 @@ export function HoldingsTable() {
   const [sortKey, setSortKey] = useState<SortKey>("currentValue")
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
 
-  const holdings = calculateHoldings()
+  const { prices } = useStockPrices()
+  const holdings = calculateHoldings(prices)
 
   const filteredHoldings = holdings.filter((h) =>
     h.symbol.toLowerCase().includes(search.toLowerCase())

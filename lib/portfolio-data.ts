@@ -289,7 +289,9 @@ export const currentPrices: Record<string, number> = {
 }
 
 // Calculate current holdings from transactions
-export function calculateHoldings(): Holding[] {
+// livePrices parameter allows passing real-time prices from Yahoo Finance
+export function calculateHoldings(livePrices?: Record<string, number>): Holding[] {
+  const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
   const holdingsMap = new Map<string, { shares: number; totalCost: number }>()
 
   for (const tx of transactions) {
@@ -312,7 +314,7 @@ export function calculateHoldings(): Holding[] {
   
   holdingsMap.forEach((value, symbol) => {
     if (value.shares > 0.01) {
-      const currentPrice = currentPrices[symbol] || 0
+      const currentPrice = prices[symbol] || 0
       const currentValue = value.shares * currentPrice
       const gainLoss = currentValue - value.totalCost
       const gainLossPercent = value.totalCost > 0 ? (gainLoss / value.totalCost) * 100 : 0
@@ -334,8 +336,9 @@ export function calculateHoldings(): Holding[] {
 }
 
 // Calculate total portfolio stats
-export function calculatePortfolioStats() {
-  const holdings = calculateHoldings()
+// livePrices parameter allows passing real-time prices from Yahoo Finance
+export function calculatePortfolioStats(livePrices?: Record<string, number>) {
+  const holdings = calculateHoldings(livePrices)
   
   const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0)
   const totalCost = holdings.reduce((sum, h) => sum + h.totalCost, 0)
