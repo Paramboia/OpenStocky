@@ -32,6 +32,7 @@ export function TransactionsTable() {
   const dragState = useRef({ id: "", startX: 0, startOffset: 0 })
   const perPage = 15
   const maxSwipeOffset = -96
+  const revealThreshold = -8
 
   const filteredTransactions = rows.filter((tx) => {
     const matchesSearch = tx.symbol.toLowerCase().includes(search.toLowerCase())
@@ -156,7 +157,10 @@ export function TransactionsTable() {
                 <TableRow key={tx.id} className="border-border">
                   <TableCell colSpan={7} className="p-0">
                     <div className="relative overflow-hidden">
-                      <div className="absolute inset-0 flex items-center justify-end gap-2 bg-destructive px-4 text-destructive-foreground">
+                      <div
+                        className="absolute inset-0 flex items-center justify-end gap-2 bg-destructive px-4 text-destructive-foreground transition-opacity duration-200"
+                        style={{ opacity: (rowOffsets[tx.id] ?? 0) <= revealThreshold ? 1 : 0 }}
+                      >
                         <Trash2 className="h-5 w-5" />
                         <span className="text-sm font-semibold">Delete</span>
                       </div>
@@ -202,15 +206,17 @@ export function TransactionsTable() {
                           <span className="text-right font-medium">
                             ${tx.transactionCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleDelete(tx.id)}
-                            aria-label={`Delete transaction ${tx.symbol} ${formatDate(tx.date)}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset && (
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleDelete(tx.id)}
+                              aria-label={`Delete transaction ${tx.symbol} ${formatDate(tx.date)}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
