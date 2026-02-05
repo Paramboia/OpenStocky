@@ -343,13 +343,13 @@ export function calculatePortfolioStats(livePrices?: Record<string, number>) {
   const costBasis = new Map<string, number[]>()
 
   for (const tx of transactions) {
-    if (tx.type === "buy" && tx.transactionCost > 0) {
+    if (tx.type === "buy") {
       const costs = costBasis.get(tx.symbol) || []
       for (let i = 0; i < tx.shares; i++) {
         costs.push(tx.pricePerShare + tx.fees / tx.shares)
       }
       costBasis.set(tx.symbol, costs)
-    } else if (tx.type === "sell" && tx.transactionCost > 0) {
+    } else if (tx.type === "sell") {
       const costs = costBasis.get(tx.symbol) || []
       for (let i = 0; i < tx.shares && costs.length > 0; i++) {
         const cost = costs.shift() || 0
@@ -375,7 +375,6 @@ export function calculatePortfolioStats(livePrices?: Record<string, number>) {
 
   // Total return (unrealized + realized)
   const totalReturn = totalGainLoss + realizedGains
-  const totalReturnPercent = totalCost > 0 ? (totalReturn / totalCost) * 100 : 0
 
   // Winners vs Losers count
   const winners = holdings.filter(h => h.gainLoss >= 0).length
@@ -406,8 +405,8 @@ export function calculatePortfolioStats(livePrices?: Record<string, number>) {
   const netInvested = totalInvested - totalWithdrawn
   
   // CAGR based on portfolio value vs net invested
-  const cagr = netInvested > 0 
-    ? (Math.pow(totalValue / netInvested, 1 / yearsInvested) - 1) * 100 
+  const cagr = totalInvested > 0 
+    ? (Math.pow(totalValue / totalInvested, 1 / yearsInvested) - 1) * 100 
     : 0
   
   // 2. IRR (Internal Rate of Return) - Money-Weighted Return
@@ -473,6 +472,7 @@ export function calculatePortfolioStats(livePrices?: Record<string, number>) {
   
   // 12. Capital Efficiency (current value / total capital ever deployed)
   const capitalEfficiency = totalCapitalDeployed > 0 ? (totalValue / totalCapitalDeployed) * 100 : 0
+  const totalReturnPercent = totalCapitalDeployed > 0 ? (totalReturn / totalCapitalDeployed) * 100 : 0
   
   // 13. Time in Market (days)
   const daysInMarket = Math.floor((today.getTime() - firstTxDate.getTime()) / (24 * 60 * 60 * 1000))
