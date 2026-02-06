@@ -24,6 +24,11 @@ export const addTransactions = (next: Transaction[]) => {
   notify()
 }
 
+export const removeTransaction = (id: string) => {
+  currentTransactions = currentTransactions.filter((tx) => tx.id !== id)
+  notify()
+}
+
 export const subscribeToTransactions = (listener: () => void) => {
   listeners.add(listener)
   return () => listeners.delete(listener)

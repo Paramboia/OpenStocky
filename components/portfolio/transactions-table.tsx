@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { Transaction } from "@/lib/portfolio-data"
-import { useTransactions } from "@/lib/transactions-store"
+import { removeTransaction, useTransactions } from "@/lib/transactions-store"
 
 export function TransactionsTable() {
   const transactions = useTransactions()
@@ -99,7 +99,7 @@ export function TransactionsTable() {
   }
 
   const handleDelete = (id: string) => {
-    setRows((prev) => prev.filter((tx) => tx.id !== id))
+    removeTransaction(id)
     setRowOffsets((prev) => {
       const next = { ...prev }
       delete next[id]
