@@ -1,8 +1,9 @@
 "use client"
 
-import { RefreshCw } from "lucide-react"
+import { Activity, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useStockPrices } from "@/lib/stock-price-context"
+import { calculatePortfolioStats } from "@/lib/portfolio-data"
 import { PortfolioHeader } from "@/components/portfolio/portfolio-header"
 import { HoldingsTable } from "@/components/portfolio/holdings-table"
 import { TransactionsTable } from "@/components/portfolio/transactions-table"
@@ -12,7 +13,8 @@ import { AddTransactionDialog } from "@/components/portfolio/add-transaction-dia
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function PortfolioContent() {
-  const { isLoading, lastUpdated, refresh } = useStockPrices()
+  const { prices, isLoading, lastUpdated, refresh } = useStockPrices()
+  const stats = calculatePortfolioStats(prices)
 
   const formatLastUpdated = (isoString: string | null) => {
     if (!isoString) return null
@@ -26,31 +28,36 @@ export function PortfolioContent() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="mx-auto w-full px-4 py-8">
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <PortfolioHeader />
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="flex flex-col items-end gap-1">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={refresh}
-                  disabled={isLoading}
-                  className="border-border text-foreground hover:bg-secondary bg-transparent"
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-                  {isLoading ? "Refreshing..." : "Refresh Prices"}
-                </Button>
-                {lastUpdated && (
-                  <span className="text-xs text-muted-foreground">
-                    Last updated: {formatLastUpdated(lastUpdated)}
-                  </span>
-                )}
-              </div>
-              <AddTransactionDialog />
-            </div>
-          </div>
+          <PortfolioHeader
+            actions={
+              <>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2 rounded-md border border-border bg-transparent px-3 py-2 text-xs text-muted-foreground">
+                    <Activity className="h-4 w-4" />
+                    <span>{stats.totalTransactions} transactions</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={refresh}
+                    disabled={isLoading}
+                    className="border-border text-foreground hover:bg-secondary bg-transparent"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                    {isLoading ? "Refreshing..." : "Refresh Prices"}
+                  </Button>
+                  {lastUpdated && (
+                    <span className="text-xs text-muted-foreground">
+                      Last updated: {formatLastUpdated(lastUpdated)}
+                    </span>
+                  )}
+                </div>
+                <AddTransactionDialog />
+              </>
+            }
+          />
 
           <div className="grid gap-6 lg:grid-cols-2">
             <PerformanceChart />
