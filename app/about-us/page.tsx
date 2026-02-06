@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function AboutUsPage() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="bg-background">
       <div className="mx-auto max-w-3xl px-4 py-12">
         <Link href="/">
           <Button variant="ghost" size="sm" className="mb-8 -ml-2 text-muted-foreground hover:text-foreground">

@@ -12,16 +12,16 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Help | OpenStocky",
     description: "Features and KPI calculation details for OpenStocky.",
-    url: `${SITE_URL}/help-us`,
+    url: `${SITE_URL}/help`,
   },
   alternates: {
-    canonical: `${SITE_URL}/help-us`,
+    canonical: `${SITE_URL}/help`,
   },
 }
 
-export default function HelpUsPage() {
+export default function HelpPage() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="bg-background">
       <div className="mx-auto max-w-3xl px-4 py-12">
         <Link href="/">
           <Button variant="ghost" size="sm" className="mb-8 -ml-2 text-muted-foreground hover:text-foreground">
@@ -177,15 +177,6 @@ export default function HelpUsPage() {
               (Portfolio value ÷ total capital ever deployed in buys) × 100. &gt; 100% means gains exceed invested capital.
             </p>
           </div>
-        </div>
-
-        <div className="mt-10 pt-8 border-t border-border">
-          <Link href="/">
-            <Button variant="outline" className="border-border text-foreground hover:bg-secondary">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to portfolio
-            </Button>
-          </Link>
         </div>
       </div>
     </main>
