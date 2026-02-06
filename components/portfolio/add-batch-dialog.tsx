@@ -42,30 +42,45 @@ export function AddBatchDialog() {
   const [mode, setMode] = useState<"override" | "append">("append")
   const [error, setError] = useState<string | null>(null)
 
+  const parsedLines = useMemo(() => {
+    return csvText
+      .trim()
+      .split(/\r?\n/)
+      .filter((line) => line.trim().length > 0)
+  }, [csvText])
+
   const parsedHeaders = useMemo(() => {
-    const firstLine = csvText.trim().split(/\r?\n/)[0]
+    const firstLine = parsedLines[0]
     if (!firstLine) return null
     return firstLine.split(/,|\t/).map((value) => value.trim())
-  }, [csvText])
+  }, [parsedLines])
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
 
-    if (!parsedHeaders || !headerMatches(parsedHeaders)) {
+    if (!parsedHeaders) {
+      setError("Please paste at least one transaction row.")
+      return
+    }
+
+    const hasHeaderRow = headerMatches(parsedHeaders)
+    const rows = hasHeaderRow ? parsedLines.slice(1) : parsedLines
+
+    if (!hasHeaderRow && parsedHeaders.length !== requiredHeaders.length) {
       setError(
-        "CSV headers must match: Transaction Date, Transaction Type, Symbol, Shares, Price per Share, Fees.",
+        "CSV must include a header row or each row must have 6 columns: Transaction Date, Transaction Type, Symbol, Shares, Price per Share, Fees.",
       )
       return
     }
 
-    const rows = csvText
-      .trim()
-      .split(/\r?\n/)
-      .slice(1)
-      .filter((line) => line.trim().length > 0)
+    const invalidRow = rows.find(
+      (line) => line.split(/,|\t/).length !== requiredHeaders.length,
+    )
 
-    if (rows.length === 0) {
-      setError("Please include at least one transaction row in the CSV.")
+    if (rows.length === 0 || invalidRow) {
+      setError(
+        "Please include at least one valid transaction row with 6 columns.",
+      )
       return
     }
 
@@ -73,7 +88,7 @@ export function AddBatchDialog() {
 
     console.log("[v0] Batch import request:", {
       mode,
-      headers: parsedHeaders,
+      headers: hasHeaderRow ? parsedHeaders : requiredHeaders,
       rowCount: rows.length,
     })
 
