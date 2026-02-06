@@ -6,13 +6,46 @@ interface AlphaVantageQuote {
 }
 
 interface AlphaVantageResponse {
-  "Global Quote"?: AlphaVantageQuote
+  "Global Quote"?: AlphaVantageQuote | Record<string, never>
   "Error Message"?: string
   Note?: string
 }
 
-const SYMBOL_BATCH_SIZE = 5
-const BATCH_DELAY_MS = 12000
+// Alpha Vantage free tier: 5 requests/min, 25/day. GLOBAL_QUOTE = 1 request per symbol.
+const REQUESTS_PER_MINUTE = 5
+const DELAY_BETWEEN_REQUESTS_MS = Math.ceil((60 * 1000) / REQUESTS_PER_MINUTE) // ~12s between each
+const MAX_SYMBOLS = 5 // Free tier: 5 req/min. Keeps request ~50s to avoid serverless timeout.
+const CACHE_SECONDS = 60
+
+async function fetchQuote(symbol: string, apiKey: string): Promise<AlphaVantageQuote | null> {
+  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(apiKey)}`
+
+  const response = await fetch(url, {
+    headers: { Accept: "application/json" },
+    next: { revalidate: CACHE_SECONDS },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Alpha Vantage API error: ${response.status}`)
+  }
+
+  const data: AlphaVantageResponse = await response.json()
+
+  if (data.Note) {
+    throw new Error("RATE_LIMIT")
+  }
+
+  if (data["Error Message"]) {
+    throw new Error(data["Error Message"])
+  }
+
+  const quote = data["Global Quote"]
+  if (!quote || typeof quote !== "object" || !quote["01. symbol"] || !quote["05. price"]) {
+    return null
+  }
+
+  return quote
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -25,8 +58,9 @@ export async function GET(request: Request) {
 
   const symbolList = symbols
     .split(",")
-    .map((symbol) => symbol.trim().toUpperCase())
-    .filter((symbol) => symbol.length > 0)
+    .map((s) => s.trim().toUpperCase())
+    .filter((s) => s.length > 0)
+    .slice(0, MAX_SYMBOLS)
 
   if (symbolList.length === 0) {
     return NextResponse.json({ error: "No valid symbols provided" }, { status: 400 })
@@ -39,85 +73,48 @@ export async function GET(request: Request) {
     )
   }
 
+  const prices: Record<string, number> = {}
+  const errors: string[] = []
+  let rateLimited = false
+
   try {
-    const batches: string[][] = []
-    for (let i = 0; i < symbolList.length; i += SYMBOL_BATCH_SIZE) {
-      batches.push(symbolList.slice(i, i + SYMBOL_BATCH_SIZE))
-    }
+    // Sequential requests with delay to respect 5 req/min limit
+    for (let i = 0; i < symbolList.length; i++) {
+      if (i > 0) {
+        await new Promise((r) => setTimeout(r, DELAY_BETWEEN_REQUESTS_MS))
+      }
 
-    const prices: Record<string, number> = {}
-    const errors: string[] = []
-
-    for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
-      const batch = batches[batchIndex]
-      const responses = await Promise.allSettled(
-        batch.map(async (symbol) => {
-          const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(
-            symbol
-          )}&apikey=${encodeURIComponent(apiKey)}`
-
-          const response = await fetch(url, {
-            headers: {
-              Accept: "application/json",
-            },
-            next: { revalidate: 60 }, // Cache for 60 seconds
-          })
-
-          if (!response.ok) {
-            throw new Error(`Alpha Vantage API error: ${response.status}`)
-          }
-
-          const data: AlphaVantageResponse = await response.json()
-
-          if (data.Note) {
-            throw new Error(`Alpha Vantage rate limit: ${data.Note}`)
-          }
-
-          if (data["Error Message"]) {
-            throw new Error(`Alpha Vantage error: ${data["Error Message"]}`)
-          }
-
-          if (!data["Global Quote"]) {
-            throw new Error("Invalid response from Alpha Vantage")
-          }
-
-          return data["Global Quote"]
-        })
-      )
-
-      for (const result of responses) {
-        if (result.status === "fulfilled") {
-          const quote = result.value
-          const symbol = quote["01. symbol"]
-          const price = quote["05. price"]
-          const numericPrice = price ? Number(price) : NaN
-
-          if (symbol && Number.isFinite(numericPrice)) {
+      try {
+        const quote = await fetchQuote(symbolList[i], apiKey)
+        if (quote) {
+          const symbol = quote["01. symbol"]!
+          const numericPrice = Number(quote["05. price"])
+          if (Number.isFinite(numericPrice)) {
             prices[symbol.toUpperCase()] = numericPrice
           }
-        } else {
-          errors.push(result.reason instanceof Error ? result.reason.message : String(result.reason))
         }
-      }
-
-      if (batchIndex < batches.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS))
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        if (msg === "RATE_LIMIT") {
+          rateLimited = true
+          errors.push("Rate limit reached (5 requests/min). Please try again in a minute.")
+          break
+        }
+        errors.push(msg)
       }
     }
 
-    if (Object.keys(prices).length === 0) {
-      throw new Error(errors[0] || "No prices returned from Alpha Vantage")
-    }
+    const missingSymbols = symbolList.filter((s) => prices[s] === undefined)
+    const hasAnyPrices = Object.keys(prices).length > 0
 
-    const missingSymbols = symbolList.filter((symbol) => prices[symbol] === undefined)
-
-    return NextResponse.json({ 
-      prices, 
+    return NextResponse.json({
+      prices,
       missingSymbols,
-      partial: errors.length > 0,
+      partial: errors.length > 0 || rateLimited,
+      rateLimited,
       errors: errors.length > 0 ? errors : undefined,
       lastUpdated: new Date().toISOString(),
-      source: "Alpha Vantage"
+      source: "Alpha Vantage",
     })
   } catch (error) {
     console.error("Error fetching stock prices:", error)

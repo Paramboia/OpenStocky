@@ -22,7 +22,7 @@ function KpiTooltip({ children, content }: { children: React.ReactNode; content:
   )
 }
 
-export function PortfolioHeader({ actions }: { actions?: React.ReactNode }) {
+export function PortfolioHeader() {
   const { prices } = useStockPrices()
   const transactions = useTransactions()
   const stats = calculatePortfolioStats(prices, transactions)
@@ -37,16 +37,6 @@ export function PortfolioHeader({ actions }: { actions?: React.ReactNode }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Portfolio</h1>
-          <p className="text-muted-foreground mt-1">
-            {stats.daysInMarket.toLocaleString()} days in market ({stats.yearsInvested.toFixed(1)} years)
-          </p>
-        </div>
-        {actions && <div className="flex items-center gap-3 shrink-0">{actions}</div>}
-      </div>
-
       {/* Primary KPIs - Full Width Cards */}
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-card border-border">
