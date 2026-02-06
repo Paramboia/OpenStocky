@@ -54,8 +54,7 @@ export default function AboutUsPage() {
           <li>Open source — audit and fork the code</li>
         </ul>
 
-        <h2 className="mt-8 text-xl font-semibold text-foreground">Built by</h2>
-        <p className="mt-2 text-muted-foreground">
+        <p className="mt-12 text-center text-sm text-muted-foreground">
           OpenStocky was built by{" "}
           <a
             href="https://miguelparente.com/?ref=miguelos"
@@ -65,26 +64,8 @@ export default function AboutUsPage() {
           >
             Miguel Macedo Parente
           </a>
-          . You can find more projects at{" "}
-          <a
-            href="https://miguelparente.com/?ref=miguelos"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
-          >
-            miguelparente.com
-          </a>
           .
         </p>
-
-        <div className="mt-12 pt-8 border-t border-border">
-          <Link href="/">
-            <Button variant="outline" className="border-border text-foreground hover:bg-secondary">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to portfolio
-            </Button>
-          </Link>
-        </div>
       </div>
     </main>
   )

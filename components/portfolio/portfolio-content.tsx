@@ -5,7 +5,6 @@ import { HoldingsTable } from "@/components/portfolio/holdings-table"
 import { TransactionsTable } from "@/components/portfolio/transactions-table"
 import { AllocationChart } from "@/components/portfolio/allocation-chart"
 import { PerformanceChart } from "@/components/portfolio/performance-chart"
-import { SeoIntro } from "@/components/portfolio/seo-intro"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function PortfolioContent() {
@@ -42,8 +41,6 @@ export function PortfolioContent() {
               <TransactionsTable />
             </TabsContent>
           </Tabs>
-
-          <SeoIntro />
         </div>
       </div>
     </main>

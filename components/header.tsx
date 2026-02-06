@@ -27,7 +27,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4">
+      <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center justify-between gap-4 px-6 lg:px-10">
         <div className="flex items-center gap-4">
           <Link
             href="/"
@@ -71,7 +71,7 @@ export function Header() {
       </div>
 
       {/* Mobile: show stats on second row */}
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 pb-3 pt-0 sm:hidden">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-2 px-6 pb-3 pt-0 lg:px-10 sm:hidden">
         <span className="text-xs text-muted-foreground">
           {stats.daysInMarket.toLocaleString()} days in market ({stats.yearsInvested.toFixed(1)} years)
         </span>
