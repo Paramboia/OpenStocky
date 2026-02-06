@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowUpDown, ArrowUpRight, ArrowDownRight, Search } from "lucide-react"
+import { ArrowUpDown, ArrowUpRight, ArrowDownRight, Search, X } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -66,8 +66,18 @@ export function HoldingsTable() {
               placeholder="Search symbol..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+              className="pl-9 pr-9 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       </CardHeader>
