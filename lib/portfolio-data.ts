@@ -44,11 +44,14 @@ export const currentPrices: Record<string, number> = {
 
 // Calculate current holdings from transactions
 // livePrices parameter allows passing real-time prices from Alpha Vantage
-export function calculateHoldings(livePrices?: Record<string, number>): Holding[] {
+export function calculateHoldings(
+  livePrices?: Record<string, number>,
+  transactionData: Transaction[] = transactions,
+): Holding[] {
   const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
   const holdingsMap = new Map<string, { shares: number; totalCost: number }>()
 
-  for (const tx of transactions) {
+  for (const tx of transactionData) {
     const current = holdingsMap.get(tx.symbol) || { shares: 0, totalCost: 0 }
     
     if (tx.type === "buy") {
@@ -129,8 +132,11 @@ function calculateIRR(cashFlows: { date: Date; amount: number }[], guess = 0.1):
 
 // Calculate total portfolio stats
 // livePrices parameter allows passing real-time prices from Alpha Vantage
-export function calculatePortfolioStats(livePrices?: Record<string, number>) {
-  const holdings = calculateHoldings(livePrices)
+export function calculatePortfolioStats(
+  livePrices?: Record<string, number>,
+  transactionData: Transaction[] = transactions,
+) {
+  const holdings = calculateHoldings(livePrices, transactionData)
   const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
   
   const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0)
@@ -142,7 +148,7 @@ export function calculatePortfolioStats(livePrices?: Record<string, number>) {
   let realizedGains = 0
   const costBasis = new Map<string, number[]>()
 
-  for (const tx of transactions) {
+  for (const tx of transactionData) {
     if (tx.type === "buy") {
       const costs = costBasis.get(tx.symbol) || []
       for (let i = 0; i < tx.shares; i++) {
@@ -181,23 +187,23 @@ export function calculatePortfolioStats(livePrices?: Record<string, number>) {
   const losers = holdings.filter(h => h.gainLoss < 0).length
 
   // Total fees paid
-  const totalFees = transactions.reduce((sum, tx) => sum + tx.fees, 0)
+  const totalFees = transactionData.reduce((sum, tx) => sum + tx.fees, 0)
 
   // === ADVANCED KPIs ===
   
   // 1. CAGR (Compound Annual Growth Rate)
-  const sortedTx = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  const sortedTx = [...transactionData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   const firstTxDate = sortedTx.length > 0 ? new Date(sortedTx[0].date) : new Date()
   const today = new Date()
   const yearsInvested = Math.max(0.01, (today.getTime() - firstTxDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
   
   // Total invested over time (sum of all buys)
-  const totalInvested = transactions
+  const totalInvested = transactionData
     .filter(tx => tx.type === "buy")
     .reduce((sum, tx) => sum + tx.transactionCost, 0)
   
   // Total withdrawn (sum of all sells)
-  const totalWithdrawn = transactions
+  const totalWithdrawn = transactionData
     .filter(tx => tx.type === "sell")
     .reduce((sum, tx) => sum + tx.transactionCost, 0)
   
@@ -210,7 +216,7 @@ export function calculatePortfolioStats(livePrices?: Record<string, number>) {
     : 0
   
   // 2. IRR (Internal Rate of Return) - Money-Weighted Return
-  const cashFlows: { date: Date; amount: number }[] = transactions.map(tx => ({
+  const cashFlows: { date: Date; amount: number }[] = transactionData.map(tx => ({
     date: new Date(tx.date),
     amount: tx.type === "buy" ? -tx.transactionCost : tx.transactionCost
   }))

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { calculatePortfolioStats, calculateHoldings } from "@/lib/portfolio-data"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useTransactions } from "@/lib/transactions-store"
 
 function KpiTooltip({ children, content }: { children: React.ReactNode; content: string }) {
   return (
@@ -23,8 +24,9 @@ function KpiTooltip({ children, content }: { children: React.ReactNode; content:
 
 export function PortfolioHeader({ actions }: { actions?: React.ReactNode }) {
   const { prices } = useStockPrices()
-  const stats = calculatePortfolioStats(prices)
-  const holdings = calculateHoldings(prices)
+  const transactions = useTransactions()
+  const stats = calculatePortfolioStats(prices, transactions)
+  const holdings = calculateHoldings(prices, transactions)
 
   const isPositive = stats.totalGainLoss >= 0
   const isRealizedPositive = stats.realizedGains >= 0

@@ -159,9 +159,9 @@ export function AddBatchDialog() {
     })
 
     alert(
-      `Batch import ready!\n\nMode: ${
+      `Batch import complete!\n\nMode: ${
         mode === "override" ? "Override database" : "Add to database"
-      }\nRows detected: ${rows.length}\n\nTo persist this, parse the CSV and update lib/portfolio-data.ts.`,
+      }\nRows detected: ${rows.length}\n\nData is stored in session memory and will reset when the browser tab is closed or refreshed.`,
     )
 
     setCsvText("")
