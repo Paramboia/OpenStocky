@@ -24,23 +24,8 @@ export interface Holding {
 // Parse the raw transaction data
 export const transactions: Transaction[] = []
 
-// Current approximate prices (you can update these - will be overwritten by live Alpha Vantage prices)
-export const currentPrices: Record<string, number> = {
-  BABA: 130.50,
-  COIN: 285.00,
-  DIDI: 4.20,
-  GTLB: 58.50,
-  LTC: 35.00,
-  SNPS: 520.00,
-  SOFI: 18.00,
-  PRLB: 50.00,
-  XYZ: 65.00,
-  VZ: 42.00,
-  DNA: 0.00,
-  ASML: 820.00,
-  RKT: 15.00,
-  LVMHF: 530.00,
-}
+// Current prices are intentionally empty; live prices should come from the in-memory store/API.
+export const currentPrices: Record<string, number> = {}
 
 // Calculate current holdings from transactions
 // livePrices parameter allows passing real-time prices from Alpha Vantage

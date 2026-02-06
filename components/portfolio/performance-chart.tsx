@@ -3,13 +3,12 @@
 import { useMemo } from "react"
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { currentPrices } from "@/lib/portfolio-data"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { useTransactions } from "@/lib/transactions-store"
 
 export function PerformanceChart() {
   const { prices: livePrices } = useStockPrices()
-  const prices = Object.keys(livePrices).length > 0 ? livePrices : currentPrices
+  const prices = Object.keys(livePrices).length > 0 ? livePrices : {}
   const transactions = useTransactions()
 
   const chartData = useMemo(() => {
@@ -65,7 +64,7 @@ export function PerformanceChart() {
       let estimatedValue = 0
       d.holdings.forEach((h, symbol) => {
         if (h.shares > 0) {
-          const price = prices[symbol] || currentPrices[symbol] || h.totalCost / h.shares
+          const price = prices[symbol] || h.totalCost / h.shares
           estimatedValue += h.shares * price
         }
       })
