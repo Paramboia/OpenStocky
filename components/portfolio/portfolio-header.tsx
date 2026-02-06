@@ -145,7 +145,7 @@ export function PortfolioHeader() {
                   <TrendingUp className="h-3 w-3" /> CAGR
                 </p>
                 <p className={`text-xl font-bold ${isCagrPositive ? "text-primary" : "text-destructive"}`}>
-                  {isCagrPositive ? "+" : ""}{stats.cagr.toFixed(1)}%
+                  {stats.cagr === Infinity ? "∞" : `${isCagrPositive ? "+" : ""}${stats.cagr.toFixed(1)}%`}
                 </p>
                 <p className="text-xs text-muted-foreground">per year</p>
               </div>

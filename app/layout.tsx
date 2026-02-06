@@ -107,7 +107,7 @@ const jsonLd = {
   featureList: [
     "In-memory portfolio storage — no account or database required",
     "Single and batch transaction entry",
-    "Live stock prices via Alpha Vantage",
+    "Live stock prices via Yahoo Finance",
     "IRR, CAGR, Sharpe ratio, volatility, win rate",
     "Portfolio allocation and performance charts",
     "Holdings and transactions tables with search and filters",

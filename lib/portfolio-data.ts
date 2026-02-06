@@ -28,7 +28,7 @@ export const transactions: Transaction[] = []
 export const currentPrices: Record<string, number> = {}
 
 // Calculate current holdings from transactions
-// livePrices parameter allows passing real-time prices from Alpha Vantage
+// livePrices parameter allows passing real-time prices from the stock price API
 export function calculateHoldings(
   livePrices?: Record<string, number>,
   transactionData: Transaction[] = transactions,
@@ -116,7 +116,7 @@ function calculateIRR(cashFlows: { date: Date; amount: number }[], guess = 0.1):
 }
 
 // Calculate total portfolio stats
-// livePrices parameter allows passing real-time prices from Alpha Vantage
+// livePrices parameter allows passing real-time prices from the stock price API
 export function calculatePortfolioStats(
   livePrices?: Record<string, number>,
   transactionData: Transaction[] = transactions,
@@ -129,25 +129,38 @@ export function calculatePortfolioStats(
   const totalGainLoss = totalValue - totalCost
   const totalGainLossPercent = totalCost > 0 ? (totalGainLoss / totalCost) * 100 : 0
 
-  // Calculate realized gains from all sell transactions
+  // Calculate realized gains from all sell transactions using FIFO lot-based queue
+  // Supports fractional shares correctly
   let realizedGains = 0
-  const costBasis = new Map<string, number[]>()
+  const costBasisLots = new Map<string, { shares: number; costPerShare: number }[]>()
 
   for (const tx of transactionData) {
     if (tx.type === "buy") {
-      const costs = costBasis.get(tx.symbol) || []
-      for (let i = 0; i < tx.shares; i++) {
-        costs.push(tx.pricePerShare + tx.fees / tx.shares)
-      }
-      costBasis.set(tx.symbol, costs)
+      const lots = costBasisLots.get(tx.symbol) || []
+      lots.push({
+        shares: tx.shares,
+        costPerShare: tx.pricePerShare + tx.fees / tx.shares,
+      })
+      costBasisLots.set(tx.symbol, lots)
     } else if (tx.type === "sell") {
-      const costs = costBasis.get(tx.symbol) || []
-      for (let i = 0; i < tx.shares && costs.length > 0; i++) {
-        const cost = costs.shift() || 0
-        realizedGains += tx.pricePerShare - cost
+      const lots = costBasisLots.get(tx.symbol) || []
+      let remaining = tx.shares
+
+      while (remaining > 0.0001 && lots.length > 0) {
+        const lot = lots[0]
+        const consumed = Math.min(remaining, lot.shares)
+
+        realizedGains += consumed * (tx.pricePerShare - lot.costPerShare)
+        lot.shares -= consumed
+        remaining -= consumed
+
+        if (lot.shares < 0.0001) {
+          lots.shift() // lot fully consumed
+        }
       }
+
       realizedGains -= tx.fees
-      costBasis.set(tx.symbol, costs)
+      costBasisLots.set(tx.symbol, lots)
     }
   }
 
@@ -195,10 +208,16 @@ export function calculatePortfolioStats(
   // Net invested = buys - sells
   const netInvested = totalInvested - totalWithdrawn
   
-  // CAGR based on portfolio value vs net invested
-  const cagr = totalInvested > 0 
-    ? (Math.pow(totalValue / totalInvested, 1 / yearsInvested) - 1) * 100 
-    : 0
+  // CAGR based on portfolio value vs net invested (actual capital at risk)
+  // netInvested = buys - sell proceeds; represents real cash deployed
+  let cagr = 0
+  if (netInvested > 0 && totalValue > 0) {
+    cagr = (Math.pow(totalValue / netInvested, 1 / yearsInvested) - 1) * 100
+  } else if (netInvested <= 0 && totalValue > 0) {
+    // User has already withdrawn more than invested — portfolio is "free money"
+    // CAGR is not meaningful here; fall back to IRR later
+    cagr = Infinity
+  }
   
   // 2. IRR (Internal Rate of Return) - Money-Weighted Return
   const cashFlows: { date: Date; amount: number }[] = transactionData.map(tx => ({

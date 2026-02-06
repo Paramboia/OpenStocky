@@ -58,9 +58,9 @@ OpenStocky has been configured with SEO best practices and explicit support for 
 
 ### 6. Crawlable Content
 
-- **SeoIntro component:** Server-rendered article at bottom of page
-- **Content:** About OpenStocky, core features, metrics, dashboard
-- **Semantic HTML:** h2, h3, ul, p, article
+- **About Us page (`/about-us`):** Server-rendered page with description, features, and attribution
+- **Help page (`/help`):** Server-rendered detailed KPI explanations and feature documentation
+- **Semantic HTML:** h1–h3, ul, p, code, sup elements throughout
 - **Visible:** Small card-style block for transparency and accessibility
 
 ### 7. Technical

@@ -50,7 +50,11 @@ export function AddTransactionDialog() {
     const shares = Number.parseFloat(formData.shares)
     const price = Number.parseFloat(formData.pricePerShare)
     const fees = Number.parseFloat(formData.fees) || 0
-    const total = shares * price + fees
+    // For buys: cost = price + fees (you pay more)
+    // For sells: proceeds = price - fees (you receive less)
+    const total = formData.type === "buy"
+      ? shares * price + fees
+      : shares * price - fees
 
     const newTransaction = {
       date: formData.date,

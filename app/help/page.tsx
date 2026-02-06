@@ -60,7 +60,7 @@ export default function HelpPage() {
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Live Prices</h3>
         <p className="mt-2 text-muted-foreground">
-          Stock prices come from Alpha Vantage via the GLOBAL_QUOTE endpoint. Free tier: 5 requests/min, 25/day. Up to 5 symbols are fetched per refresh to respect limits.
+          Stock prices come from Yahoo Finance via the <code className="rounded bg-muted px-1 py-0.5 text-xs">yahoo-finance2</code> library. No API key is required. All symbols are fetched in a single batch call with no rate limits or daily caps. Prices are cached for 60 seconds.
         </p>
 
         <h2 className="mt-10 text-xl font-semibold text-foreground">How KPIs Are Calculated</h2>
@@ -111,7 +111,7 @@ export default function HelpPage() {
           <div>
             <h3 className="font-semibold text-foreground">CAGR (Compound Annual Growth Rate)</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              (Portfolio value ÷ total invested)<sup>1/years</sup> − 1, expressed as %. Assumes constant growth over time. Years = days since first transaction ÷ 365.25.
+              (Portfolio value ÷ net invested)<sup>1/years</sup> − 1, expressed as %. Net invested = total buys − total sell proceeds, representing actual capital at risk. Years = days since first transaction ÷ 365.25. If net invested ≤ 0 (you have withdrawn more than you put in), CAGR shows ∞.
             </p>
           </div>
 

@@ -48,7 +48,7 @@ export default function AboutUsPage() {
         <ul className="mt-2 list-disc list-inside space-y-1 text-muted-foreground">
           <li>In-memory storage — no account or database required</li>
           <li>Single and batch transaction entry (CSV from Excel)</li>
-          <li>Live stock prices via Alpha Vantage</li>
+          <li>Live stock prices via Yahoo Finance — no API key needed</li>
           <li>IRR, CAGR, Sharpe ratio, volatility, win rate, and more</li>
           <li>Portfolio allocation and performance charts</li>
           <li>Open source — audit and fork the code</li>
