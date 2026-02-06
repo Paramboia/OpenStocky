@@ -11,6 +11,7 @@ import { AllocationChart } from "@/components/portfolio/allocation-chart"
 import { PerformanceChart } from "@/components/portfolio/performance-chart"
 import { AddTransactionDialog } from "@/components/portfolio/add-transaction-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function PortfolioContent() {
   const { prices, isLoading, lastUpdated, refresh } = useStockPrices()
@@ -32,8 +33,8 @@ export function PortfolioContent() {
         <div className="flex flex-col gap-6">
           <PortfolioHeader
             actions={
-              <>
-                <div className="flex flex-col items-end gap-1">
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-wrap items-center justify-end gap-3">
                   <div className="flex items-center gap-2 rounded-md border border-border bg-transparent px-3 py-2 text-xs text-muted-foreground">
                     <Activity className="h-4 w-4" />
                     <span>{stats.totalTransactions} transactions</span>
@@ -48,14 +49,15 @@ export function PortfolioContent() {
                     <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
                     {isLoading ? "Refreshing..." : "Refresh Prices"}
                   </Button>
-                  {lastUpdated && (
-                    <span className="text-xs text-muted-foreground">
-                      Last updated: {formatLastUpdated(lastUpdated)}
-                    </span>
-                  )}
+                  <AddTransactionDialog />
+                  <ThemeToggle />
                 </div>
-                <AddTransactionDialog />
-              </>
+                {lastUpdated && (
+                  <span className="text-xs text-muted-foreground">
+                    Last updated: {formatLastUpdated(lastUpdated)}
+                  </span>
+                )}
+              </div>
             }
           />
 
