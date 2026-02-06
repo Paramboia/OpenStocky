@@ -224,7 +224,7 @@ export const transactions: Transaction[] = [
   { id: "199", date: "2025-07-03", type: "buy", symbol: "ASML", shares: 10, pricePerShare: 799, fees: 10, transactionCost: 8000 },
 ]
 
-// Current approximate prices (you can update these - will be overwritten by live Yahoo Finance prices)
+// Current approximate prices (you can update these - will be overwritten by live Alpha Vantage prices)
 export const currentPrices: Record<string, number> = {
   BABA: 130.50,
   COIN: 285.00,
@@ -243,7 +243,7 @@ export const currentPrices: Record<string, number> = {
 }
 
 // Calculate current holdings from transactions
-// livePrices parameter allows passing real-time prices from Yahoo Finance
+// livePrices parameter allows passing real-time prices from Alpha Vantage
 export function calculateHoldings(livePrices?: Record<string, number>): Holding[] {
   const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
   const holdingsMap = new Map<string, { shares: number; totalCost: number }>()
@@ -328,7 +328,7 @@ function calculateIRR(cashFlows: { date: Date; amount: number }[], guess = 0.1):
 }
 
 // Calculate total portfolio stats
-// livePrices parameter allows passing real-time prices from Yahoo Finance
+// livePrices parameter allows passing real-time prices from Alpha Vantage
 export function calculatePortfolioStats(livePrices?: Record<string, number>) {
   const holdings = calculateHoldings(livePrices)
   const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
