@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ArrowUpRight, ArrowDownRight, Search, Filter, Trash2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -21,9 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { transactions, type Transaction } from "@/lib/portfolio-data"
+import type { Transaction } from "@/lib/portfolio-data"
+import { useTransactions } from "@/lib/transactions-store"
 
 export function TransactionsTable() {
+  const transactions = useTransactions()
   const [rows, setRows] = useState(transactions)
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState<"all" | "buy" | "sell">("all")
@@ -33,6 +35,11 @@ export function TransactionsTable() {
   const perPage = 15
   const maxSwipeOffset = -96
   const revealThreshold = -8
+
+  useEffect(() => {
+    setRows(transactions)
+    setPage(1)
+  }, [transactions])
 
   const filteredTransactions = rows.filter((tx) => {
     const matchesSearch = tx.symbol.toLowerCase().includes(search.toLowerCase())

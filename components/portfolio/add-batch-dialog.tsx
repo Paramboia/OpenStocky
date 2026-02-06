@@ -16,6 +16,8 @@ import {
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
+import { addTransactions, setTransactions } from "@/lib/transactions-store"
+import type { Transaction } from "@/lib/portfolio-data"
 
 const requiredHeaders = [
   "Transaction Date",
@@ -55,6 +57,53 @@ export function AddBatchDialog() {
     return firstLine.split(/,|\t/).map((value) => value.trim())
   }, [parsedLines])
 
+  const createId = (index: number) => {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return crypto.randomUUID()
+    }
+    return `${Date.now()}-${index}`
+  }
+
+  const parseTransactionRow = (line: string, index: number): Transaction | null => {
+    const [date, rawType, symbol, rawShares, rawPrice, rawFees] = line
+      .split(/,|\t/)
+      .map((value) => value.trim())
+
+    const normalizedType = rawType?.toLowerCase()
+    if (!date || (normalizedType !== "buy" && normalizedType !== "sell")) {
+      return null
+    }
+
+    const shares = Number.parseFloat(rawShares)
+    const pricePerShare = Number.parseFloat(rawPrice)
+    const fees = Number.parseFloat(rawFees)
+
+    if (
+      !symbol ||
+      Number.isNaN(shares) ||
+      Number.isNaN(pricePerShare) ||
+      Number.isNaN(fees)
+    ) {
+      return null
+    }
+
+    const transactionCost =
+      normalizedType === "buy"
+        ? shares * pricePerShare + fees
+        : shares * pricePerShare - fees
+
+    return {
+      id: createId(index),
+      date,
+      type: normalizedType,
+      symbol: symbol.toUpperCase(),
+      shares,
+      pricePerShare,
+      fees,
+      transactionCost,
+    }
+  }
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
 
@@ -84,7 +133,24 @@ export function AddBatchDialog() {
       return
     }
 
+    const parsedTransactions = rows
+      .map((line, index) => parseTransactionRow(line, index))
+      .filter((value): value is Transaction => Boolean(value))
+
+    if (parsedTransactions.length !== rows.length) {
+      setError(
+        "One or more rows are invalid. Please check dates, types (buy/sell), and numeric values.",
+      )
+      return
+    }
+
     setError(null)
+
+    if (mode === "override") {
+      setTransactions(parsedTransactions)
+    } else {
+      addTransactions(parsedTransactions)
+    }
 
     console.log("[v0] Batch import request:", {
       mode,
