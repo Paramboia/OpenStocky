@@ -290,7 +290,7 @@ export function calculatePortfolioStats(
     totalGainLossPercent,
     realizedGains,
     holdingsCount: holdings.length,
-    totalTransactions: transactions.length,
+    totalTransactions: transactionData.length,
     bestPerformer,
     worstPerformer,
     largestHolding,
