@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { addTransactions } from "@/lib/transactions-store"
 
 interface TransactionFormData {
   date: string
@@ -61,11 +62,20 @@ export function AddTransactionDialog() {
       transactionCost: total,
     }
 
+    addTransactions([
+      {
+        ...newTransaction,
+        id: typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}`,
+      },
+    ])
+
     // For now, log the transaction - in a real app you'd save this to a database
     console.log("[v0] New transaction to add:", newTransaction)
     
     // Show the transaction data that would be added
-    alert(`Transaction created!\n\n${formData.type.toUpperCase()} ${shares} shares of ${formData.symbol.toUpperCase()}\nPrice: $${price.toFixed(2)}\nFees: $${fees.toFixed(2)}\nTotal: $${total.toFixed(2)}\n\nTo persist this, add it to the transactions array in lib/portfolio-data.ts`)
+    alert(`Transaction created!\n\n${formData.type.toUpperCase()} ${shares} shares of ${formData.symbol.toUpperCase()}\nPrice: $${price.toFixed(2)}\nFees: $${fees.toFixed(2)}\nTotal: $${total.toFixed(2)}\n\nData is stored in session memory and will reset when the browser tab is closed or refreshed.`)
     
     // Reset form and close dialog
     setFormData({
