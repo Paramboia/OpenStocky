@@ -52,8 +52,8 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
     symbolsParam ? `/api/stock-prices?symbols=${symbolsParam}` : null,
     fetcher,
     {
-      refreshInterval: 0, // Don't auto-refresh, user controls refresh
-      revalidateOnFocus: false,
+      refreshInterval: 60000,
+      revalidateOnFocus: true,
       dedupingInterval: 30000, // Dedupe requests within 30 seconds
     }
   )

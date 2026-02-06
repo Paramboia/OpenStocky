@@ -270,28 +270,10 @@ export const transactions: Transaction[] = [
   { id: "245", date: "2026-02-02", type: "buy", symbol: "U", shares: 50, pricePerShare: 29, fees: 5, transactionCost: 1455 },
 ]
 
-// Current approximate prices (you can update these - will be overwritten by live Yahoo Finance prices)
-export const currentPrices: Record<string, number> = {
-  BABA: 130.50,
-  COIN: 285.00,
-  DIDI: 4.20,
-  GTLB: 58.50,
-  LTC: 35.00,
-  SNPS: 520.00,
-  SOFI: 18.00,
-  PRLB: 50.00,
-  XYZ: 65.00,
-  VZ: 42.00,
-  DNA: 0.00,
-  ASML: 820.00,
-  RKT: 15.00,
-  LVMHF: 530.00,
-}
-
 // Calculate current holdings from transactions
-// livePrices parameter allows passing real-time prices from Yahoo Finance
+// livePrices parameter requires real-time prices from Yahoo Finance
 export function calculateHoldings(livePrices?: Record<string, number>): Holding[] {
-  const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
+  const prices = livePrices || {}
   const holdingsMap = new Map<string, { shares: number; totalCost: number }>()
 
   for (const tx of transactions) {
@@ -374,10 +356,10 @@ function calculateIRR(cashFlows: { date: Date; amount: number }[], guess = 0.1):
 }
 
 // Calculate total portfolio stats
-// livePrices parameter allows passing real-time prices from Yahoo Finance
+// livePrices parameter requires real-time prices from Yahoo Finance
 export function calculatePortfolioStats(livePrices?: Record<string, number>) {
   const holdings = calculateHoldings(livePrices)
-  const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
+  const prices = livePrices || {}
   
   const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0)
   const totalCost = holdings.reduce((sum, h) => sum + h.totalCost, 0)
