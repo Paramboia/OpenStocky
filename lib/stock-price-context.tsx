@@ -1,8 +1,8 @@
 "use client"
 
-import { createContext, useContext, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useCallback, useMemo, type ReactNode } from "react"
 import useSWR from "swr"
-import { transactions } from "@/lib/portfolio-data"
+import { useTransactions } from "@/lib/transactions-store"
 
 interface StockPriceContextType {
   prices: Record<string, number>
@@ -15,10 +15,10 @@ interface StockPriceContextType {
 const StockPriceContext = createContext<StockPriceContextType | null>(null)
 
 // Get unique symbols from transactions that we still hold
-function getActiveSymbols(): string[] {
+function getActiveSymbols(transactionData: ReturnType<typeof useTransactions>): string[] {
   const holdingsMap = new Map<string, number>()
   
-  for (const tx of transactions) {
+  for (const tx of transactionData) {
     const current = holdingsMap.get(tx.symbol) || 0
     if (tx.type === "buy") {
       holdingsMap.set(tx.symbol, current + tx.shares)
@@ -45,7 +45,8 @@ const fetcher = async (url: string) => {
 }
 
 export function StockPriceProvider({ children }: { children: ReactNode }) {
-  const symbols = getActiveSymbols()
+  const transactions = useTransactions()
+  const symbols = useMemo(() => getActiveSymbols(transactions), [transactions])
   const symbolsParam = symbols.join(",")
   
   const { data, error, isLoading, mutate } = useSWR(
@@ -59,11 +60,22 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
   )
 
   const refresh = useCallback(() => {
-    mutate()
+    mutate(undefined, { revalidate: true })
   }, [mutate])
 
+  const filteredPrices = useMemo(() => {
+    if (!data?.prices || symbols.length === 0) return {}
+    const next: Record<string, number> = {}
+    for (const symbol of symbols) {
+      if (data.prices[symbol] !== undefined) {
+        next[symbol] = data.prices[symbol]
+      }
+    }
+    return next
+  }, [data?.prices, symbols])
+
   const value: StockPriceContextType = {
-    prices: data?.prices || {},
+    prices: filteredPrices,
     isLoading,
     isError: !!error,
     lastUpdated: data?.lastUpdated || null,

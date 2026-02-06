@@ -10,12 +10,15 @@ import { TransactionsTable } from "@/components/portfolio/transactions-table"
 import { AllocationChart } from "@/components/portfolio/allocation-chart"
 import { PerformanceChart } from "@/components/portfolio/performance-chart"
 import { AddTransactionDialog } from "@/components/portfolio/add-transaction-dialog"
+import { AddBatchDialog } from "@/components/portfolio/add-batch-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useTransactions } from "@/lib/transactions-store"
 
 export function PortfolioContent() {
   const { prices, isLoading, lastUpdated, refresh } = useStockPrices()
-  const stats = calculatePortfolioStats(prices)
+  const transactions = useTransactions()
+  const stats = calculatePortfolioStats(prices, transactions)
 
   const formatLastUpdated = (isoString: string | null) => {
     if (!isoString) return null
@@ -49,6 +52,7 @@ export function PortfolioContent() {
                     <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
                     {isLoading ? "Refreshing..." : "Refresh Prices"}
                   </Button>
+                  <AddBatchDialog />
                   <AddTransactionDialog />
                   <ThemeToggle />
                 </div>
