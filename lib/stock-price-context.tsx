@@ -60,11 +60,22 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
   )
 
   const refresh = useCallback(() => {
-    mutate()
+    mutate(undefined, { revalidate: true })
   }, [mutate])
 
+  const filteredPrices = useMemo(() => {
+    if (!data?.prices || symbols.length === 0) return {}
+    const next: Record<string, number> = {}
+    for (const symbol of symbols) {
+      if (data.prices[symbol] !== undefined) {
+        next[symbol] = data.prices[symbol]
+      }
+    }
+    return next
+  }, [data?.prices, symbols])
+
   const value: StockPriceContextType = {
-    prices: data?.prices || {},
+    prices: filteredPrices,
     isLoading,
     isError: !!error,
     lastUpdated: data?.lastUpdated || null,
