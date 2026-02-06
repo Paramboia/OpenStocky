@@ -21,7 +21,7 @@ function KpiTooltip({ children, content }: { children: React.ReactNode; content:
   )
 }
 
-export function PortfolioHeader() {
+export function PortfolioHeader({ actions }: { actions?: React.ReactNode }) {
   const { prices } = useStockPrices()
   const stats = calculatePortfolioStats(prices)
   const holdings = calculateHoldings(prices)
@@ -35,21 +35,18 @@ export function PortfolioHeader() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Portfolio</h1>
           <p className="text-muted-foreground mt-1">
             {stats.daysInMarket.toLocaleString()} days in market ({stats.yearsInvested.toFixed(1)} years)
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Activity className="h-4 w-4" />
-          <span>{stats.totalTransactions} transactions</span>
-        </div>
+        {actions && <div className="flex items-center gap-3 shrink-0">{actions}</div>}
       </div>
 
       {/* Primary KPIs - Full Width Cards */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-card border-border">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
@@ -137,7 +134,7 @@ export function PortfolioHeader() {
           <CardTitle className="text-lg font-semibold text-foreground">Performance Metrics</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
+          <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
             <KpiTooltip content="Internal Rate of Return - Money-weighted annualized return accounting for timing and size of cash flows">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -243,7 +240,7 @@ export function PortfolioHeader() {
           <CardTitle className="text-lg font-semibold text-foreground">Portfolio Composition</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
+          <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
             <KpiTooltip content="Number of active positions in portfolio">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">

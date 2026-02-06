@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { ArrowUpRight, ArrowDownRight, Search, Filter } from "lucide-react"
+import { useRef, useState } from "react"
+import { ArrowUpRight, ArrowDownRight, Search, Filter, Trash2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -24,12 +24,17 @@ import {
 import { transactions, type Transaction } from "@/lib/portfolio-data"
 
 export function TransactionsTable() {
+  const [rows, setRows] = useState(transactions)
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState<"all" | "buy" | "sell">("all")
   const [page, setPage] = useState(1)
+  const [rowOffsets, setRowOffsets] = useState<Record<string, number>>({})
+  const dragState = useRef({ id: "", startX: 0, startOffset: 0 })
   const perPage = 15
+  const maxSwipeOffset = -96
+  const revealThreshold = -8
 
-  const filteredTransactions = transactions.filter((tx) => {
+  const filteredTransactions = rows.filter((tx) => {
     const matchesSearch = tx.symbol.toLowerCase().includes(search.toLowerCase())
     const matchesType = typeFilter === "all" || tx.type === typeFilter
     return matchesSearch && matchesType
@@ -51,6 +56,47 @@ export function TransactionsTable() {
       month: "short",
       day: "numeric",
       year: "numeric",
+    })
+  }
+
+  const handlePointerDown = (id: string, event: React.PointerEvent<HTMLDivElement>) => {
+    dragState.current = {
+      id,
+      startX: event.clientX,
+      startOffset: rowOffsets[id] ?? 0,
+    }
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  const handlePointerMove = (id: string, event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragState.current.id !== id) {
+      return
+    }
+    event.preventDefault()
+    const delta = event.clientX - dragState.current.startX
+    const nextOffset = Math.min(0, Math.max(maxSwipeOffset, dragState.current.startOffset + delta))
+    setRowOffsets((prev) => ({ ...prev, [id]: nextOffset }))
+  }
+
+  const handlePointerEnd = (id: string, event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragState.current.id !== id) {
+      return
+    }
+    event.preventDefault()
+    const currentOffset = rowOffsets[id] ?? 0
+    const shouldOpen = currentOffset < maxSwipeOffset / 2
+    setRowOffsets((prev) => ({ ...prev, [id]: shouldOpen ? maxSwipeOffset : 0 }))
+    dragState.current = { id: "", startX: 0, startOffset: 0 }
+    event.currentTarget.releasePointerCapture(event.pointerId)
+  }
+
+  const handleDelete = (id: string) => {
+    setRows((prev) => prev.filter((tx) => tx.id !== id))
+    setRowOffsets((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
     })
   }
 
@@ -108,39 +154,68 @@ export function TransactionsTable() {
             </TableHeader>
             <TableBody>
               {paginatedTransactions.map((tx) => (
-                <TableRow key={tx.id} className="border-border hover:bg-secondary/50">
-                  <TableCell className="text-foreground">{formatDate(tx.date)}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={tx.type === "buy" ? "default" : "secondary"}
-                      className={
-                        tx.type === "buy"
-                          ? "bg-primary/20 text-primary hover:bg-primary/30"
-                          : "bg-destructive/20 text-destructive hover:bg-destructive/30"
-                      }
-                    >
-                      <span className="flex items-center gap-1">
-                        {tx.type === "buy" ? (
-                          <ArrowDownRight className="h-3 w-3" />
-                        ) : (
-                          <ArrowUpRight className="h-3 w-3" />
-                        )}
-                        {tx.type.toUpperCase()}
-                      </span>
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-semibold text-foreground">{tx.symbol}</TableCell>
-                  <TableCell className="text-right text-foreground">
-                    {tx.shares.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className="text-right text-foreground">
-                    ${tx.pricePerShare.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    ${tx.fees.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className="text-right font-medium text-foreground">
-                    ${tx.transactionCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <TableRow key={tx.id} className="border-border">
+                  <TableCell colSpan={7} className="p-0">
+                    <div className="relative overflow-hidden">
+                      <div
+                        className="absolute inset-0 flex items-center justify-end gap-2 bg-destructive px-4 text-destructive-foreground transition-opacity duration-200"
+                        style={{
+                          opacity: (rowOffsets[tx.id] ?? 0) <= revealThreshold ? 1 : 0,
+                          pointerEvents: (rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? "auto" : "none",
+                        }}
+                        role="button"
+                        tabIndex={(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? 0 : -1}
+                        aria-label={`Delete transaction ${tx.symbol} ${formatDate(tx.date)}`}
+                        onClick={() => handleDelete(tx.id)}
+                      >
+                        <Trash2 className="h-5 w-5" />
+                        <span className="text-sm font-semibold">Delete</span>
+                      </div>
+                      <div
+                        className="grid grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr_1fr_0.8fr_1fr] items-center gap-0 bg-card px-4 py-4 text-foreground transition-transform duration-200 ease-out hover:bg-secondary/50"
+                        style={{ transform: `translateX(${rowOffsets[tx.id] ?? 0}px)` }}
+                        onPointerDown={(event) => handlePointerDown(tx.id, event)}
+                        onPointerMove={(event) => handlePointerMove(tx.id, event)}
+                        onPointerUp={(event) => handlePointerEnd(tx.id, event)}
+                        onPointerCancel={(event) => handlePointerEnd(tx.id, event)}
+                      >
+                        <div>{formatDate(tx.date)}</div>
+                        <div>
+                          <Badge
+                            variant={tx.type === "buy" ? "default" : "secondary"}
+                            className={
+                              tx.type === "buy"
+                                ? "bg-primary/20 text-primary hover:bg-primary/30"
+                                : "bg-destructive/20 text-destructive hover:bg-destructive/30"
+                            }
+                          >
+                            <span className="flex items-center gap-1">
+                              {tx.type === "buy" ? (
+                                <ArrowDownRight className="h-3 w-3" />
+                              ) : (
+                                <ArrowUpRight className="h-3 w-3" />
+                              )}
+                              {tx.type.toUpperCase()}
+                            </span>
+                          </Badge>
+                        </div>
+                        <div className="font-semibold">{tx.symbol}</div>
+                        <div className="text-right">
+                          {tx.shares.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-right">
+                          ${tx.pricePerShare.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-right text-muted-foreground">
+                          ${tx.fees.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div className="flex items-center justify-end gap-3">
+                          <span className="text-right font-medium">
+                            ${tx.transactionCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
