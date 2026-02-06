@@ -19,7 +19,7 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 - **In-Memory Storage** — Transactions and portfolio state live only in the current tab. No servers store your financial data.
 - **Single Transaction Entry** — Add individual buy/sell transactions via a form (date, symbol, shares, price, fees).
 - **Batch Upload** — Paste CSV data from Excel to add or replace transactions. Supports both append and override modes.
-- **Live Stock Prices** — Integrates with [Alpha Vantage](https://www.alphavantage.co/) to fetch real-time quotes for your holdings.
+- **Live Stock Prices** — Integrates with [Yahoo Finance](https://finance.yahoo.com/) (via [`yahoo-finance2`](https://github.com/gadicc/yahoo-finance2)) to fetch real-time quotes for all your holdings in a single batch call. No API key required.
 - **Theme Toggle** — Light and dark mode via `next-themes`.
 
 ### Metrics & KPIs
@@ -73,7 +73,7 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 ```
 OpenStocky/
 ├── app/
-│   ├── api/stock-prices/route.ts   # Alpha Vantage proxy API
+│   ├── api/stock-prices/route.ts   # Yahoo Finance stock price API
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── page.tsx
@@ -117,13 +117,7 @@ npm install
 
 ### Environment Variables
 
-Create `.env.local` and add your Alpha Vantage API key (free tier: 25 requests/day):
-
-```env
-ALPHAVANTAGE_API_KEY=your_api_key_here
-```
-
-Get a key at [Alpha Vantage](https://www.alphavantage.co/support/#api-key).
+No environment variables are required. Stock prices are fetched via Yahoo Finance with no API key needed.
 
 ### Run Locally
 
@@ -183,12 +177,14 @@ Transaction Date,Transaction Type,Symbol,Shares,Price per Share,Fees
   "missingSymbols": [],
   "partial": false,
   "lastUpdated": "2025-02-06T12:00:00.000Z",
-  "source": "Alpha Vantage"
+  "source": "Yahoo Finance"
 }
 ```
 
-- **Alpha Vantage free tier:** 5 requests/minute, 25/day. The API fetches symbols sequentially with ~12s between each to stay under the limit.
-- Up to 5 symbols per refresh to avoid serverless timeouts. For more holdings, refresh again (prices are cached 60s).
+- **No API key required** — Uses [`yahoo-finance2`](https://github.com/gadicc/yahoo-finance2), a community-maintained library for Yahoo Finance data.
+- **No rate limits** — All symbols are fetched in a single batch call. No delays, no daily caps.
+- Prices are cached for 60 seconds via `Cache-Control` headers.
+- Up to 100 symbols per request (sane cap to keep payloads reasonable).
 
 ---
 
@@ -204,8 +200,8 @@ Transaction Date,Transaction Type,Symbol,Shares,Price per Share,Fees
 ## Limitations
 
 1. **Session-only data** — Refreshing or closing the tab wipes all transactions. Use batch upload to quickly reimport.
-2. **Alpha Vantage free tier** — 5 requests/min, 25/day. Up to 5 symbols per refresh; use multiple refreshes or a premium key for larger portfolios.
-3. **US equities focus** — Alpha Vantage supports global symbols, but validation is tuned for common US tickers.
+2. **Yahoo Finance (unofficial)** — The `yahoo-finance2` library uses Yahoo's unofficial API. While the community has kept it working since 2013, Yahoo may change their endpoints at any time.
+3. **US equities focus** — Yahoo Finance supports global symbols, but ticker validation is tuned for common US conventions.
 4. **Historical performance** — The growth chart uses current prices for past months; true historical performance would require historical price data.
 
 ---
@@ -230,6 +226,6 @@ MIT — See [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- [Alpha Vantage](https://www.alphavantage.co/) for stock price data  
+- [yahoo-finance2](https://github.com/gadicc/yahoo-finance2) for stock price data  
 - [Radix UI](https://www.radix-ui.com/) and [Recharts](https://recharts.org/) for UI and charts  
 - [shadcn/ui](https://ui.shadcn.com/) for component patterns  

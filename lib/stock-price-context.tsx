@@ -55,7 +55,7 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
     {
       refreshInterval: 0, // Don't auto-refresh, user controls refresh
       revalidateOnFocus: false,
-      dedupingInterval: 30000, // Dedupe requests within 30 seconds
+      dedupingInterval: 10000, // Dedupe requests within 10 seconds
     }
   )
 

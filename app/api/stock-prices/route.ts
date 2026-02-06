@@ -1,56 +1,16 @@
 import { NextResponse } from "next/server"
+import YahooFinance from "yahoo-finance2"
 
-interface AlphaVantageQuote {
-  "01. symbol"?: string
-  "05. price"?: string
-}
+const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] })
 
-interface AlphaVantageResponse {
-  "Global Quote"?: AlphaVantageQuote | Record<string, never>
-  "Error Message"?: string
-  Note?: string
-}
-
-// Alpha Vantage free tier: 5 requests/min, 25/day. GLOBAL_QUOTE = 1 request per symbol.
-const REQUESTS_PER_MINUTE = 5
-const DELAY_BETWEEN_REQUESTS_MS = Math.ceil((60 * 1000) / REQUESTS_PER_MINUTE) // ~12s between each
-const MAX_SYMBOLS = 5 // Free tier: 5 req/min. Keeps request ~50s to avoid serverless timeout.
+// No hard limit on symbols — Yahoo Finance handles batch queries efficiently.
+// We set a sane cap to keep response payloads reasonable.
+const MAX_SYMBOLS = 100
 const CACHE_SECONDS = 60
-
-async function fetchQuote(symbol: string, apiKey: string): Promise<AlphaVantageQuote | null> {
-  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(apiKey)}`
-
-  const response = await fetch(url, {
-    headers: { Accept: "application/json" },
-    next: { revalidate: CACHE_SECONDS },
-  })
-
-  if (!response.ok) {
-    throw new Error(`Alpha Vantage API error: ${response.status}`)
-  }
-
-  const data: AlphaVantageResponse = await response.json()
-
-  if (data.Note) {
-    throw new Error("RATE_LIMIT")
-  }
-
-  if (data["Error Message"]) {
-    throw new Error(data["Error Message"])
-  }
-
-  const quote = data["Global Quote"]
-  if (!quote || typeof quote !== "object" || !quote["01. symbol"] || !quote["05. price"]) {
-    return null
-  }
-
-  return quote
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const symbols = searchParams.get("symbols")
-  const apiKey = process.env.ALPHAVANTAGE_API_KEY
 
   if (!symbols) {
     return NextResponse.json({ error: "No symbols provided" }, { status: 400 })
@@ -59,68 +19,65 @@ export async function GET(request: Request) {
   const symbolList = symbols
     .split(",")
     .map((s) => s.trim().toUpperCase())
-    .filter((s) => s.length > 0)
+    .filter((s) => s.length > 0 && /^[A-Z0-9.]{1,10}$/.test(s))
     .slice(0, MAX_SYMBOLS)
 
   if (symbolList.length === 0) {
     return NextResponse.json({ error: "No valid symbols provided" }, { status: 400 })
   }
 
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "Missing Alpha Vantage API key" },
-      { status: 500 }
-    )
-  }
-
   const prices: Record<string, number> = {}
   const errors: string[] = []
-  let rateLimited = false
 
   try {
-    // Sequential requests with delay to respect 5 req/min limit
-    for (let i = 0; i < symbolList.length; i++) {
-      if (i > 0) {
-        await new Promise((r) => setTimeout(r, DELAY_BETWEEN_REQUESTS_MS))
-      }
+    // Fetch all symbols in parallel — yahoo-finance2 quote() accepts an array
+    const results = await yahooFinance.quote(symbolList, {}, { validateResult: false })
 
-      try {
-        const quote = await fetchQuote(symbolList[i], apiKey)
-        if (quote) {
-          const symbol = quote["01. symbol"]!
-          const numericPrice = Number(quote["05. price"])
-          if (Number.isFinite(numericPrice)) {
-            prices[symbol.toUpperCase()] = numericPrice
-          }
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        if (msg === "RATE_LIMIT") {
-          rateLimited = true
-          errors.push("Rate limit reached (5 requests/min). Please try again in a minute.")
-          break
-        }
-        errors.push(msg)
+    // quote() returns a single object for one symbol, or an array for multiple
+    const quotesArray = Array.isArray(results) ? results : [results]
+
+    for (const quote of quotesArray) {
+      if (!quote || typeof quote !== "object") continue
+
+      const symbol = (quote.symbol ?? "").toUpperCase()
+      const price = quote.regularMarketPrice
+
+      if (symbol && typeof price === "number" && Number.isFinite(price)) {
+        prices[symbol] = price
       }
     }
+  } catch (error) {
+    console.error("Yahoo Finance batch quote error:", error)
+    errors.push(error instanceof Error ? error.message : String(error))
 
-    const missingSymbols = symbolList.filter((s) => prices[s] === undefined)
-    const hasAnyPrices = Object.keys(prices).length > 0
+    // If the batch call fails, try symbols individually as fallback
+    for (const sym of symbolList) {
+      if (prices[sym] !== undefined) continue // already have it
+      try {
+        const quote = await yahooFinance.quote(sym)
+        if (quote?.regularMarketPrice && quote.symbol) {
+          prices[quote.symbol.toUpperCase()] = quote.regularMarketPrice
+        }
+      } catch {
+        // Individual symbol failed — could be delisted or invalid
+      }
+    }
+  }
 
-    return NextResponse.json({
+  const missingSymbols = symbolList.filter((s) => prices[s] === undefined)
+
+  return NextResponse.json(
+    {
       prices,
       missingSymbols,
-      partial: errors.length > 0 || rateLimited,
-      rateLimited,
-      errors: errors.length > 0 ? errors : undefined,
+      partial: missingSymbols.length > 0,
       lastUpdated: new Date().toISOString(),
-      source: "Alpha Vantage",
-    })
-  } catch (error) {
-    console.error("Error fetching stock prices:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch stock prices", message: String(error) },
-      { status: 500 }
-    )
-  }
+      source: "Yahoo Finance",
+    },
+    {
+      headers: {
+        "Cache-Control": `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${CACHE_SECONDS * 2}`,
+      },
+    }
+  )
 }
