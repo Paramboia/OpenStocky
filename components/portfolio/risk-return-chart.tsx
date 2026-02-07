@@ -13,7 +13,9 @@ import {
   ReferenceLine,
   Cell,
 } from "recharts"
+import { Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { calculateHoldings } from "@/lib/portfolio-data"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { useTransactions } from "@/lib/transactions-store"
@@ -85,12 +87,26 @@ export function RiskReturnChart() {
     return null
   }
 
+  const chartTitle = (
+    <CardTitle className="flex items-center gap-2 text-foreground">
+      Risk vs Return
+      <TooltipProvider delayDuration={100}>
+        <UiTooltip>
+          <TooltipTrigger asChild>
+            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="text-sm">Scatter plot of each position: x-axis is portfolio weight (concentration risk), y-axis is return %. Bubble size reflects position value. Positions in the top-right are large and profitable; bottom-right are large losers that may need attention.</p>
+          </TooltipContent>
+        </UiTooltip>
+      </TooltipProvider>
+    </CardTitle>
+  )
+
   if (holdings.length === 0) {
     return (
       <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-foreground">Risk vs Return</CardTitle>
-        </CardHeader>
+        <CardHeader>{chartTitle}</CardHeader>
         <CardContent>
           <div className="flex h-80 items-center justify-center text-muted-foreground">
             Add transactions to see risk vs return analysis
@@ -102,9 +118,7 @@ export function RiskReturnChart() {
 
   return (
     <Card className="bg-card border-border">
-      <CardHeader>
-        <CardTitle className="text-foreground">Risk vs Return</CardTitle>
-      </CardHeader>
+      <CardHeader>{chartTitle}</CardHeader>
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">

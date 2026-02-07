@@ -148,7 +148,18 @@ export function HoldingsTable() {
                     className="h-8 px-2 text-muted-foreground hover:text-foreground"
                     onClick={() => handleSort("gainLoss")}
                   >
-                    P/L
+                    Unrealized
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead className="text-right text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                    onClick={() => handleSort("totalReturn")}
+                  >
+                    Total Return
                     <ArrowUpDown className="ml-2 h-4 w-4" />
                   </Button>
                 </TableHead>
@@ -158,6 +169,7 @@ export function HoldingsTable() {
             <TableBody>
               {sortedHoldings.map((holding) => {
                 const isPositive = holding.gainLoss >= 0
+                const isTotalPositive = holding.totalReturn >= 0
                 const allocation = totalValue > 0 ? (holding.currentValue / totalValue) * 100 : 0
 
                 return (
@@ -185,6 +197,18 @@ export function HoldingsTable() {
                         <span className={isPositive ? "text-primary" : "text-destructive"}>
                           {isPositive ? "+" : ""}
                           {holding.gainLossPercent.toFixed(2)}%
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className={`font-medium ${isTotalPositive ? "text-primary" : "text-destructive"}`}>
+                          {isTotalPositive ? "+" : ""}$
+                          {Math.round(holding.totalReturn).toLocaleString("en-US")}
+                        </span>
+                        <span className={`text-xs ${isTotalPositive ? "text-primary/70" : "text-destructive/70"}`}>
+                          {isTotalPositive ? "+" : ""}
+                          {holding.totalReturnPercent.toFixed(1)}%
                         </span>
                       </div>
                     </TableCell>

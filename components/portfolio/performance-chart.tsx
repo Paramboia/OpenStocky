@@ -2,7 +2,9 @@
 
 import { useMemo } from "react"
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts"
+import { Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { useTransactions } from "@/lib/transactions-store"
 
@@ -102,7 +104,19 @@ export function PerformanceChart() {
   return (
     <Card className="bg-card border-border">
       <CardHeader>
-        <CardTitle className="text-foreground">Portfolio Growth</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-foreground">
+          Portfolio Growth
+          <TooltipProvider delayDuration={100}>
+            <UiTooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="text-sm">Tracks net invested capital vs estimated portfolio value over the last 24 months. The gap between the two lines represents unrealized gain or loss.</p>
+              </TooltipContent>
+            </UiTooltip>
+          </TooltipProvider>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-80">

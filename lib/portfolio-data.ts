@@ -19,6 +19,9 @@ export interface Holding {
   currentValue: number
   gainLoss: number
   gainLossPercent: number
+  realizedGainLoss: number
+  totalReturn: number
+  totalReturnPercent: number
 }
 
 // Parse the raw transaction data
@@ -36,17 +39,49 @@ export function calculateHoldings(
   const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
   const holdingsMap = new Map<string, { shares: number; totalCost: number }>()
 
+  // Track per-symbol realized gains using FIFO lots
+  const realizedMap = new Map<string, number>()
+  const fifoLots = new Map<string, { shares: number; costPerShare: number }[]>()
+  // Track total capital invested per symbol (sum of all buys) for total return %
+  const totalBuyCostMap = new Map<string, number>()
+
   for (const tx of transactionData) {
     const current = holdingsMap.get(tx.symbol) || { shares: 0, totalCost: 0 }
     
     if (tx.type === "buy") {
       current.shares += tx.shares
       current.totalCost += tx.transactionCost
+
+      // FIFO lot tracking
+      const lots = fifoLots.get(tx.symbol) || []
+      lots.push({ shares: tx.shares, costPerShare: tx.pricePerShare + tx.fees / tx.shares })
+      fifoLots.set(tx.symbol, lots)
+
+      // Accumulate total buy cost
+      totalBuyCostMap.set(tx.symbol, (totalBuyCostMap.get(tx.symbol) || 0) + tx.transactionCost)
     } else {
       // For sells, reduce shares and proportionally reduce cost basis
       const avgCost = current.shares > 0 ? current.totalCost / current.shares : 0
       current.shares -= tx.shares
       current.totalCost = Math.max(0, current.shares * avgCost)
+
+      // FIFO realized gain calculation
+      const lots = fifoLots.get(tx.symbol) || []
+      let remaining = tx.shares
+      let realized = realizedMap.get(tx.symbol) || 0
+
+      while (remaining > 0.0001 && lots.length > 0) {
+        const lot = lots[0]
+        const consumed = Math.min(remaining, lot.shares)
+        realized += consumed * (tx.pricePerShare - lot.costPerShare)
+        lot.shares -= consumed
+        remaining -= consumed
+        if (lot.shares < 0.0001) lots.shift()
+      }
+
+      realized -= tx.fees
+      realizedMap.set(tx.symbol, realized)
+      fifoLots.set(tx.symbol, lots)
     }
     
     holdingsMap.set(tx.symbol, current)
@@ -60,6 +95,10 @@ export function calculateHoldings(
       const currentValue = value.shares * currentPrice
       const gainLoss = currentValue - value.totalCost
       const gainLossPercent = value.totalCost > 0 ? (gainLoss / value.totalCost) * 100 : 0
+      const realizedGainLoss = realizedMap.get(symbol) || 0
+      const totalReturn = gainLoss + realizedGainLoss
+      const totalBuyCost = totalBuyCostMap.get(symbol) || value.totalCost
+      const totalReturnPercent = totalBuyCost > 0 ? (totalReturn / totalBuyCost) * 100 : 0
 
       holdings.push({
         symbol,
@@ -70,6 +109,9 @@ export function calculateHoldings(
         currentValue,
         gainLoss,
         gainLossPercent,
+        realizedGainLoss,
+        totalReturn,
+        totalReturnPercent,
       })
     }
   })

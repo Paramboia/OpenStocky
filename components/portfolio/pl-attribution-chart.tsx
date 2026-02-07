@@ -12,7 +12,9 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts"
+import { Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { calculateHoldings } from "@/lib/portfolio-data"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { useTransactions } from "@/lib/transactions-store"
@@ -29,10 +31,12 @@ export function PlAttributionChart() {
     return [...holdings]
       .map((h) => ({
         symbol: h.symbol,
-        gainLoss: h.gainLoss,
-        gainLossPercent: h.gainLossPercent,
+        totalReturn: h.totalReturn,
+        totalReturnPercent: h.totalReturnPercent,
+        unrealized: h.gainLoss,
+        realized: h.realizedGainLoss,
       }))
-      .sort((a, b) => b.gainLoss - a.gainLoss)
+      .sort((a, b) => b.totalReturn - a.totalReturn)
       .slice(0, 20) // Top 20 positions for readability
   }, [holdings])
 
@@ -41,37 +45,62 @@ export function PlAttributionChart() {
     payload,
   }: {
     active?: boolean
-    payload?: { payload: { symbol: string; gainLoss: number; gainLossPercent: number } }[]
+    payload?: { payload: { symbol: string; totalReturn: number; totalReturnPercent: number; unrealized: number; realized: number } }[]
   }) => {
     if (active && payload && payload.length) {
       const d = payload[0].payload
-      const isPositive = d.gainLoss >= 0
+      const isPositive = d.totalReturn >= 0
       return (
         <div className="rounded-lg border border-border bg-card p-3 shadow-lg">
           <p className="font-semibold text-foreground">{d.symbol}</p>
           <p className={isPositive ? "text-primary" : "text-destructive"}>
             {isPositive ? "+" : ""}$
-            {d.gainLoss.toLocaleString("en-US", {
+            {d.totalReturn.toLocaleString("en-US", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
           </p>
           <p className="text-muted-foreground text-sm">
             {isPositive ? "+" : ""}
-            {d.gainLossPercent.toFixed(2)}%
+            {d.totalReturnPercent.toFixed(2)}%
           </p>
+          {d.realized !== 0 && (
+            <div className="mt-1.5 border-t border-border pt-1.5 text-xs text-muted-foreground">
+              <p>Unrealized: {d.unrealized >= 0 ? "+" : ""}${d.unrealized.toLocaleString("en-US", { maximumFractionDigits: 0 })}</p>
+              <p>Realized: {d.realized >= 0 ? "+" : ""}${d.realized.toLocaleString("en-US", { maximumFractionDigits: 0 })}</p>
+            </div>
+          )}
         </div>
       )
     }
     return null
   }
 
+  // Dynamic height: ensure every bar has enough space for its label
+  const barHeight = 28
+  const minChartHeight = 320
+  const dynamicHeight = Math.max(minChartHeight, chartData.length * barHeight + 40)
+
+  const chartTitle = (
+    <CardTitle className="flex items-center gap-2 text-foreground">
+      P/L Attribution
+      <TooltipProvider delayDuration={100}>
+        <UiTooltip>
+          <TooltipTrigger asChild>
+            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="text-sm">Horizontal bar chart showing each position&apos;s total return (unrealized + realized gains), sorted from best to worst. Includes profits from shares you&apos;ve already sold. Hover for a breakdown.</p>
+          </TooltipContent>
+        </UiTooltip>
+      </TooltipProvider>
+    </CardTitle>
+  )
+
   if (holdings.length === 0) {
     return (
       <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-foreground">P/L Attribution</CardTitle>
-        </CardHeader>
+        <CardHeader>{chartTitle}</CardHeader>
         <CardContent>
           <div className="flex h-80 items-center justify-center text-muted-foreground">
             Add transactions to see P/L attribution
@@ -83,11 +112,9 @@ export function PlAttributionChart() {
 
   return (
     <Card className="bg-card border-border">
-      <CardHeader>
-        <CardTitle className="text-foreground">P/L Attribution</CardTitle>
-      </CardHeader>
+      <CardHeader>{chartTitle}</CardHeader>
       <CardContent>
-        <div className="h-80">
+        <div style={{ height: dynamicHeight }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
@@ -119,14 +146,15 @@ export function PlAttributionChart() {
                 tick={{ fill: "hsl(240, 5%, 55%)", fontSize: 11 }}
                 tickLine={false}
                 axisLine={{ stroke: "hsl(240, 6%, 16%)" }}
+                interval={0}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(240, 6%, 16%, 0.4)" }} />
               <ReferenceLine x={0} stroke="hsl(240, 5%, 40%)" strokeWidth={1} />
-              <Bar dataKey="gainLoss" radius={[0, 4, 4, 0]} maxBarSize={24}>
+              <Bar dataKey="totalReturn" radius={[0, 4, 4, 0]} maxBarSize={24}>
                 {chartData.map((entry) => (
                   <Cell
                     key={entry.symbol}
-                    fill={entry.gainLoss >= 0 ? GREEN : RED}
+                    fill={entry.totalReturn >= 0 ? GREEN : RED}
                     fillOpacity={0.85}
                   />
                 ))}

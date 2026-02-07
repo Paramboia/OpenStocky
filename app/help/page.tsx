@@ -63,6 +63,38 @@ export default function HelpPage() {
           Stock prices come from Yahoo Finance via the <code className="rounded bg-muted px-1 py-0.5 text-xs">yahoo-finance2</code> library. No API key is required. All symbols are fetched in a single batch call with no rate limits or daily caps. Prices are cached for 60 seconds.
         </p>
 
+        <h2 className="mt-10 text-xl font-semibold text-foreground">Charts</h2>
+
+        <div className="mt-6 space-y-6">
+          <div>
+            <h3 className="font-semibold text-foreground">Portfolio Growth</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Area chart tracking net invested capital (blue) vs estimated portfolio value (green) over the last 24 months. The gap between the two lines represents unrealized gain or loss. Monthly snapshots are derived from transaction history; portfolio value uses current live prices as an approximation for past months.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-foreground">Portfolio Allocation</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Donut chart showing the percentage weight of each holding by market value. The top 10 positions are displayed individually; smaller holdings are grouped as &quot;Other&quot;. Helps visualize concentration and diversification at a glance.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-foreground">P/L Attribution</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Horizontal bar chart showing each position&apos;s dollar profit or loss, sorted from best to worst performer. Green bars represent gains, red bars represent losses. Up to 20 positions are displayed. This chart instantly reveals which holdings are driving portfolio performance and which are dragging it down — a staple of institutional portfolio reporting.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-foreground">Risk vs Return</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Scatter plot where each position is a bubble. The x-axis represents portfolio weight (concentration risk), the y-axis represents return %, and bubble size reflects position value. A dashed line at 0% separates winners from losers. Positions in the top-right quadrant are large and profitable (ideal); bottom-right are large losers that may need attention; top-left are small winners you could consider sizing up.
+            </p>
+          </div>
+        </div>
+
         <h2 className="mt-10 text-xl font-semibold text-foreground">How KPIs Are Calculated</h2>
 
         <div className="mt-6 space-y-6">
