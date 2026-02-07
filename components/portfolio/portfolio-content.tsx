@@ -5,6 +5,8 @@ import { HoldingsTable } from "@/components/portfolio/holdings-table"
 import { TransactionsTable } from "@/components/portfolio/transactions-table"
 import { AllocationChart } from "@/components/portfolio/allocation-chart"
 import { PerformanceChart } from "@/components/portfolio/performance-chart"
+import { PlAttributionChart } from "@/components/portfolio/pl-attribution-chart"
+import { RiskReturnChart } from "@/components/portfolio/risk-return-chart"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function PortfolioContent() {
@@ -17,6 +19,11 @@ export function PortfolioContent() {
           <div className="grid gap-6 lg:grid-cols-2">
             <PerformanceChart />
             <AllocationChart />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <PlAttributionChart />
+            <RiskReturnChart />
           </div>
 
           <Tabs defaultValue="holdings" className="w-full" role="tablist" aria-label="Holdings and transactions">
