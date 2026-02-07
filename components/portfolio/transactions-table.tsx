@@ -156,6 +156,12 @@ export function TransactionsTable() {
         </div>
       </CardHeader>
       <CardContent>
+        {transactions.length === 0 ? (
+          <div className="flex h-40 items-center justify-center rounded-lg border border-border text-muted-foreground">
+            Add transactions to see your transaction history
+          </div>
+        ) : (
+        <>
         <div className="rounded-lg border border-border overflow-hidden">
           <Table>
             <TableHeader>
@@ -269,6 +275,8 @@ export function TransactionsTable() {
               </Button>
             </div>
           </div>
+        )}
+        </>
         )}
       </CardContent>
     </Card>

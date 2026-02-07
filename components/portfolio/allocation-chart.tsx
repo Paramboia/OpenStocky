@@ -65,23 +65,38 @@ export function AllocationChart() {
     return null
   }
 
+  const chartTitle = (
+    <CardTitle className="flex items-center gap-2 text-foreground">
+      Portfolio Allocation
+      <TooltipProvider delayDuration={100}>
+        <UiTooltip>
+          <TooltipTrigger asChild>
+            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="text-sm">Donut chart showing the percentage weight of each holding by market value. Top 10 positions are shown individually; smaller positions are grouped as &quot;Other&quot;.</p>
+          </TooltipContent>
+        </UiTooltip>
+      </TooltipProvider>
+    </CardTitle>
+  )
+
+  if (chartData.length === 0) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>{chartTitle}</CardHeader>
+        <CardContent>
+          <div className="flex h-80 items-center justify-center text-muted-foreground">
+            Add transactions to see portfolio allocation
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="bg-card border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-foreground">
-          Portfolio Allocation
-          <TooltipProvider delayDuration={100}>
-            <UiTooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p className="text-sm">Donut chart showing the percentage weight of each holding by market value. Top 10 positions are shown individually; smaller positions are grouped as &quot;Other&quot;.</p>
-              </TooltipContent>
-            </UiTooltip>
-          </TooltipProvider>
-        </CardTitle>
-      </CardHeader>
+      <CardHeader>{chartTitle}</CardHeader>
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
