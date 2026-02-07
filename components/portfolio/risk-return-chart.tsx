@@ -36,9 +36,11 @@ export function RiskReturnChart() {
     return holdings.map((h) => ({
       symbol: h.symbol,
       weight: (h.currentValue / totalValue) * 100,
-      returnPct: h.gainLossPercent,
+      returnPct: h.totalReturnPercent,
       value: h.currentValue,
-      gainLoss: h.gainLoss,
+      totalReturn: h.totalReturn,
+      unrealized: h.gainLoss,
+      realized: h.realizedGainLoss,
     }))
   }, [holdings, totalValue])
 
@@ -52,11 +54,11 @@ export function RiskReturnChart() {
     payload,
   }: {
     active?: boolean
-    payload?: { payload: { symbol: string; weight: number; returnPct: number; value: number; gainLoss: number } }[]
+    payload?: { payload: { symbol: string; weight: number; returnPct: number; value: number; totalReturn: number; unrealized: number; realized: number } }[]
   }) => {
     if (active && payload && payload.length) {
       const d = payload[0].payload
-      const isPositive = d.returnPct >= 0
+      const isPositive = d.totalReturn >= 0
       return (
         <div className="rounded-lg border border-border bg-card p-3 shadow-lg">
           <p className="font-semibold text-foreground">{d.symbol}</p>
@@ -64,23 +66,20 @@ export function RiskReturnChart() {
             Weight: {d.weight.toFixed(1)}%
           </p>
           <p className={`text-sm ${isPositive ? "text-primary" : "text-destructive"}`}>
-            Return: {isPositive ? "+" : ""}
-            {d.returnPct.toFixed(2)}%
+            Total Return: {isPositive ? "+" : ""}$
+            {d.totalReturn.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+            {" "}({isPositive ? "+" : ""}{d.returnPct.toFixed(1)}%)
           </p>
           <p className="text-muted-foreground text-sm">
             Value: $
-            {d.value.toLocaleString("en-US", {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 0,
-            })}
+            {d.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
           </p>
-          <p className={`text-sm ${d.gainLoss >= 0 ? "text-primary" : "text-destructive"}`}>
-            P/L: {d.gainLoss >= 0 ? "+" : ""}$
-            {d.gainLoss.toLocaleString("en-US", {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 0,
-            })}
-          </p>
+          {d.realized !== 0 && (
+            <div className="mt-1.5 border-t border-border pt-1.5 text-xs text-muted-foreground">
+              <p>Unrealized: {d.unrealized >= 0 ? "+" : ""}${d.unrealized.toLocaleString("en-US", { maximumFractionDigits: 0 })}</p>
+              <p>Realized: {d.realized >= 0 ? "+" : ""}${d.realized.toLocaleString("en-US", { maximumFractionDigits: 0 })}</p>
+            </div>
+          )}
         </div>
       )
     }
@@ -96,7 +95,7 @@ export function RiskReturnChart() {
             <Info className="h-4 w-4 text-muted-foreground cursor-help" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
-            <p className="text-sm">Scatter plot of each position: x-axis is portfolio weight (concentration risk), y-axis is return %. Bubble size reflects position value. Positions in the top-right are large and profitable; bottom-right are large losers that may need attention.</p>
+            <p className="text-sm">Scatter plot of each position: x-axis is portfolio weight (concentration risk), y-axis is total return % (unrealized + realized). Bubble size reflects position value. Positions in the top-right are large and profitable; bottom-right are large losers that may need attention.</p>
           </TooltipContent>
         </UiTooltip>
       </TooltipProvider>
@@ -154,7 +153,7 @@ export function RiskReturnChart() {
                 tickLine={{ stroke: "hsl(240, 6%, 16%)" }}
                 axisLine={{ stroke: "hsl(240, 6%, 16%)" }}
                 label={{
-                  value: "Return %",
+                  value: "Total Return %",
                   angle: -90,
                   position: "insideLeft",
                   offset: 10,

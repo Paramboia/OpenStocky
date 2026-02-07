@@ -19,38 +19,42 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 - **In-Memory Storage** — Transactions and portfolio state live only in the current tab. No servers store your financial data.
 - **Single Transaction Entry** — Add individual buy/sell transactions via a form (date, symbol, shares, price, fees).
 - **Batch Upload** — Paste CSV data from Excel to add or replace transactions. Supports both append and override modes.
+- **Export CSV** — Download all transactions as a CSV file, compatible with the batch upload format for easy re-import.
 - **Live Stock Prices** — Integrates with [Yahoo Finance](https://finance.yahoo.com/) (via [`yahoo-finance2`](https://github.com/gadicc/yahoo-finance2)) to fetch real-time quotes for all your holdings in a single batch call. No API key required.
 - **Theme Toggle** — Light and dark mode via `next-themes`.
 
 ### Metrics & KPIs
 
 **Primary metrics:**
-- Portfolio value & net invested  
-- Total return (unrealized + realized P/L)  
-- Unrealized and realized gains/losses  
+- Portfolio value & net invested
+- Total return (unrealized + realized P/L) — both at portfolio level and per symbol
+- Unrealized and realized gains/losses
 
 **Advanced performance metrics:**
-- **IRR** (Internal Rate of Return) — Money-weighted annualized return  
-- **CAGR** (Compound Annual Growth Rate) — Time-weighted annual return  
-- **Sharpe Ratio** — Risk-adjusted return vs volatility  
-- **Volatility** — Standard deviation of position returns  
-- **Win Rate** — Percentage of positions in profit  
-- **Profit Factor** — Gross profits / gross losses  
-- **Risk/Reward Ratio** — Average win / average loss  
-- **Beta (estimate)** — Portfolio volatility vs market (sector-based approximation)  
+- **IRR** (Internal Rate of Return) — Money-weighted annualized return
+- **CAGR** (Compound Annual Growth Rate) — Based on net invested capital
+- **Sharpe Ratio** — Risk-adjusted return vs volatility
+- **Volatility** — Standard deviation of position returns
+- **Win Rate** — Percentage of positions in profit
+- **Profit Factor** — Gross profits / gross losses
+- **Risk/Reward Ratio** — Average win / average loss
+- **Beta (estimate)** — Portfolio volatility vs market (sector-based approximation)
 
 **Portfolio composition:**
-- Number of positions & average position size  
-- Top 5 concentration & HHI (Herfindahl–Hirschman Index)  
-- Total fees, capital deployed, capital efficiency  
-- Best performer  
+- Number of positions & average position size
+- Top 5 concentration & HHI (Herfindahl–Hirschman Index)
+- Total fees, capital deployed, capital efficiency
+- Best performer
 
 ### Dashboard UI
 
-- **Holdings table** — Sortable columns (symbol, shares, avg cost, price, value, P/L), search, allocation bars  
-- **Transactions table** — Paginated list, search by symbol, filter by buy/sell, swipe-to-delete on mobile  
-- **Allocation chart** — Donut chart of portfolio weights (top 10 holdings + “Other”)  
-- **Performance chart** — Area chart of net invested vs portfolio value over the last 24 months  
+- **Holdings table** — Sortable columns (symbol, shares, avg cost, price, value, unrealized P/L, total return, allocation), search with clear button
+- **Transactions table** — Paginated list, search by symbol, filter by buy/sell, swipe-to-delete on mobile
+- **Portfolio Growth chart** — Area chart of net invested vs portfolio value over the last 24 months
+- **Allocation chart** — Donut chart of portfolio weights (top 10 holdings + "Other")
+- **P/L Attribution chart** — Horizontal bar chart of each position's total return (unrealized + realized), sorted best to worst
+- **Risk vs Return chart** — Scatter/bubble plot: portfolio weight vs total return %, sized by position value
+- **Info tooltips** — Every chart title has an (i) icon explaining how to read it
 
 ---
 
@@ -74,26 +78,34 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 OpenStocky/
 ├── app/
 │   ├── api/stock-prices/route.ts   # Yahoo Finance stock price API
+│   ├── about-us/page.tsx           # About page
+│   ├── help/page.tsx               # Help & KPI documentation
 │   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx
+│   ├── layout.tsx                  # Root layout, SEO metadata, JSON-LD
+│   ├── page.tsx
+│   ├── robots.ts                   # Dynamic robots.txt
+│   └── sitemap.ts                  # Dynamic sitemap.xml
 ├── components/
-│   ├── portfolio/                   # Portfolio-specific components
-│   │   ├── add-batch-dialog.tsx     # CSV batch import
+│   ├── header.tsx                  # Global sticky header
+│   ├── footer.tsx                  # Global footer
+│   ├── portfolio/                  # Portfolio-specific components
+│   │   ├── add-batch-dialog.tsx    # CSV batch import
 │   │   ├── add-transaction-dialog.tsx
-│   │   ├── allocation-chart.tsx     # Donut chart
-│   │   ├── holdings-table.tsx
-│   │   ├── performance-chart.tsx    # Invested vs value over time
-│   │   ├── portfolio-content.tsx    # Main layout
-│   │   ├── portfolio-header.tsx     # KPIs and metrics
+│   │   ├── allocation-chart.tsx    # Donut chart
+│   │   ├── holdings-table.tsx      # Holdings with total return
+│   │   ├── performance-chart.tsx   # Invested vs value over time
+│   │   ├── pl-attribution-chart.tsx # P/L attribution bar chart
+│   │   ├── portfolio-content.tsx   # Main layout
+│   │   ├── portfolio-header.tsx    # KPIs and metrics
+│   │   ├── risk-return-chart.tsx   # Risk vs return scatter
 │   │   └── transactions-table.tsx
 │   ├── theme-provider.tsx
 │   ├── theme-toggle.tsx
-│   └── ui/                          # Radix-based UI primitives
+│   └── ui/                         # Radix-based UI primitives
 ├── lib/
-│   ├── portfolio-data.ts            # Holdings, stats, IRR, KPIs
-│   ├── stock-price-context.tsx      # SWR + React context for prices
-│   ├── transactions-store.ts        # In-memory transaction store
+│   ├── portfolio-data.ts           # Holdings, stats, IRR, KPIs, FIFO
+│   ├── stock-price-context.tsx     # SWR + React context for prices
+│   ├── transactions-store.ts       # In-memory transaction store
 │   └── utils.ts
 └── public/
 ```
@@ -136,7 +148,9 @@ npm start
 
 ---
 
-## Batch Upload Format
+## Batch Upload & Export
+
+### Upload Format
 
 Paste CSV data with these headers (comma- or tab-separated):
 
@@ -158,8 +172,12 @@ Transaction Date,Transaction Type,Symbol,Shares,Price per Share,Fees
 ```
 
 **Import modes:**
-- **Append** — Add new rows to existing transactions  
-- **Override** — Replace all transactions with the pasted data  
+- **Append** — Add new rows to existing transactions
+- **Override** — Replace all transactions with the pasted data
+
+### Export
+
+Click **Export CSV** in the header to download all transactions. The exported file uses the same format as the upload, so it can be re-imported directly via batch upload.
 
 ---
 
@@ -199,7 +217,7 @@ Transaction Date,Transaction Type,Symbol,Shares,Price per Share,Fees
 
 ## Limitations
 
-1. **Session-only data** — Refreshing or closing the tab wipes all transactions. Use batch upload to quickly reimport.
+1. **Session-only data** — Refreshing or closing the tab wipes all transactions. Use Export CSV to back up and batch upload to reimport.
 2. **Yahoo Finance (unofficial)** — The `yahoo-finance2` library uses Yahoo's unofficial API. While the community has kept it working since 2013, Yahoo may change their endpoints at any time.
 3. **US equities focus** — Yahoo Finance supports global symbols, but ticker validation is tuned for common US conventions.
 4. **Historical performance** — The growth chart uses current prices for past months; true historical performance would require historical price data.
@@ -210,11 +228,11 @@ Transaction Date,Transaction Type,Symbol,Shares,Price per Share,Fees
 
 Contributions are welcome. To contribute:
 
-1. Fork the repository  
-2. Create a feature branch  
-3. Make your changes  
-4. Run `npm run lint`  
-5. Open a pull request  
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run `npm run lint`
+5. Open a pull request
 
 ---
 
@@ -226,6 +244,6 @@ MIT — See [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- [yahoo-finance2](https://github.com/gadicc/yahoo-finance2) for stock price data  
-- [Radix UI](https://www.radix-ui.com/) and [Recharts](https://recharts.org/) for UI and charts  
-- [shadcn/ui](https://ui.shadcn.com/) for component patterns  
+- [yahoo-finance2](https://github.com/gadicc/yahoo-finance2) for stock price data
+- [Radix UI](https://www.radix-ui.com/) and [Recharts](https://recharts.org/) for UI and charts
+- [shadcn/ui](https://ui.shadcn.com/) for component patterns

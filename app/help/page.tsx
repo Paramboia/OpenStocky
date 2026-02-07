@@ -55,7 +55,12 @@ export default function HelpPage() {
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Holdings</h3>
         <p className="mt-2 text-muted-foreground">
-          Holdings are derived from transactions: buys increase shares and cost basis; sells reduce shares and proportionally reduce cost basis (avg cost method). Unrealized P/L = (current price × shares) − total cost.
+          Holdings are derived from transactions: buys increase shares and cost basis; sells reduce shares and proportionally reduce cost basis (avg cost method). Unrealized P/L = (current price × shares) − total cost. Each holding also displays <strong>Total Return</strong> (unrealized P/L + realized gains from sold shares), computed using FIFO lot matching, so you can see the full picture of each position&apos;s performance.
+        </p>
+
+        <h3 className="mt-6 text-base font-semibold text-foreground">Export CSV</h3>
+        <p className="mt-2 text-muted-foreground">
+          Click <strong>Export CSV</strong> in the header to download all your transactions as a CSV file. The exported file uses the same column format as the batch upload (Transaction Date, Transaction Type, Symbol, Shares, Price per Share, Fees), so you can re-import it later via batch upload.
         </p>
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Live Prices</h3>
@@ -83,17 +88,21 @@ export default function HelpPage() {
           <div>
             <h3 className="font-semibold text-foreground">P/L Attribution</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Horizontal bar chart showing each position&apos;s dollar profit or loss, sorted from best to worst performer. Green bars represent gains, red bars represent losses. Up to 20 positions are displayed. This chart instantly reveals which holdings are driving portfolio performance and which are dragging it down — a staple of institutional portfolio reporting.
+              Horizontal bar chart showing each position&apos;s <strong>total return</strong> (unrealized + realized gains), sorted from best to worst. Includes profits from shares you&apos;ve already sold. Green bars represent gains, red bars represent losses. Hover for a breakdown of unrealized and realized components. Up to 20 positions are displayed. This chart instantly reveals which holdings are driving portfolio performance and which are dragging it down — a staple of institutional portfolio reporting.
             </p>
           </div>
 
           <div>
             <h3 className="font-semibold text-foreground">Risk vs Return</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Scatter plot where each position is a bubble. The x-axis represents portfolio weight (concentration risk), the y-axis represents return %, and bubble size reflects position value. A dashed line at 0% separates winners from losers. Positions in the top-right quadrant are large and profitable (ideal); bottom-right are large losers that may need attention; top-left are small winners you could consider sizing up.
+              Scatter plot where each position is a bubble. The x-axis represents portfolio weight (concentration risk), the y-axis represents <strong>total return %</strong> (unrealized + realized), and bubble size reflects position value. A dashed line at 0% separates winners from losers. Positions in the top-right quadrant are large and profitable (ideal); bottom-right are large losers that may need attention; top-left are small winners you could consider sizing up.
             </p>
           </div>
         </div>
+
+        <p className="mt-6 text-sm text-muted-foreground">
+          <strong>Tip:</strong> Hover over the <strong>(i)</strong> icon next to each chart title for a quick explanation of what the chart shows.
+        </p>
 
         <h2 className="mt-10 text-xl font-semibold text-foreground">How KPIs Are Calculated</h2>
 
@@ -130,6 +139,13 @@ export default function HelpPage() {
             <h3 className="font-semibold text-foreground">Total Return</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Unrealized P/L + Realized P/L. Total profit or loss across all positions (open and closed).
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-foreground">Total Return (per symbol)</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Shown in the Holdings table&apos;s &quot;Total Return&quot; column. For each holding: unrealized P/L on the current position + realized gains/losses from shares already sold (FIFO). Percentage = total return ÷ total capital ever bought for that symbol. This metric captures the complete picture for positions where you have partially taken profits.
             </p>
           </div>
 

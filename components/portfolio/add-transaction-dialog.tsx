@@ -33,7 +33,11 @@ interface TransactionFormData {
   fees: string
 }
 
-export function AddTransactionDialog() {
+interface AddTransactionDialogProps {
+  trigger?: React.ReactNode
+}
+
+export function AddTransactionDialog({ trigger }: AddTransactionDialogProps) {
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState<TransactionFormData>({
     date: new Date().toISOString().split("T")[0],
@@ -103,10 +107,12 @@ export function AddTransactionDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Transaction
-        </Button>
+        {trigger || (
+          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Transaction
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="bg-card border-border text-foreground sm:max-w-md">
         <DialogHeader>

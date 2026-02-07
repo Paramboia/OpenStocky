@@ -1,5 +1,5 @@
 import React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { StockPriceProvider } from "@/lib/stock-price-context"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { MobileBottomBar } from "@/components/mobile-bottom-bar"
 
 const geist = Geist({
   subsets: ["latin"],
@@ -21,6 +22,12 @@ const SITE_URL = "https://www.openstocky.com"
 const SITE_NAME = "OpenStocky"
 const SITE_DESCRIPTION =
   "Open-source stock investment portfolio tracker. No authentication, no database, no account required. Track buy/sell transactions, live prices, IRR, CAGR, Sharpe ratio, and portfolio allocation in your browser."
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -132,8 +139,9 @@ export default function RootLayout({
           <StockPriceProvider>
             <div className="flex min-h-screen flex-col">
               <Header />
-              <div className="flex-1">{children}</div>
+              <div className="flex-1 pb-28 sm:pb-0">{children}</div>
               <Footer />
+              <MobileBottomBar />
             </div>
           </StockPriceProvider>
         </ThemeProvider>

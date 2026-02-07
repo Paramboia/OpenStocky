@@ -38,7 +38,11 @@ const headerMatches = (headers: string[]) =>
       normalizedHeader(header) === normalizedHeader(requiredHeaders[index]),
   )
 
-export function AddBatchDialog() {
+interface AddBatchDialogProps {
+  trigger?: React.ReactNode
+}
+
+export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
   const [open, setOpen] = useState(false)
   const [csvText, setCsvText] = useState("")
   const [mode, setMode] = useState<"override" | "append">("append")
@@ -172,10 +176,12 @@ export function AddBatchDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="secondary">
-          <FileSpreadsheet className="mr-2 h-4 w-4" />
-          Add Batch
-        </Button>
+        {trigger || (
+          <Button variant="secondary">
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Add Batch
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="bg-card border-border text-foreground sm:max-w-lg">
         <DialogHeader>
