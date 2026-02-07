@@ -13,6 +13,20 @@ export const metadata: Metadata = {
     title: "About Us | OpenStocky",
     description: "About OpenStocky — an open-source stock portfolio tracker. Built by Miguel Macedo Parente.",
     url: `${SITE_URL}/about-us`,
+    images: [
+      {
+        url: "/og_image.png",
+        width: 1200,
+        height: 630,
+        alt: "OpenStocky - Open source stock investment portfolio tracker",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About Us | OpenStocky",
+    description: "About OpenStocky — an open-source stock portfolio tracker. Built by Miguel Macedo Parente.",
+    images: ["/og_image.png"],
   },
   alternates: {
     canonical: `${SITE_URL}/about-us`,

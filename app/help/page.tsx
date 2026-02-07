@@ -13,6 +13,20 @@ export const metadata: Metadata = {
     title: "Help | OpenStocky",
     description: "Features and KPI calculation details for OpenStocky.",
     url: `${SITE_URL}/help`,
+    images: [
+      {
+        url: "/og_image.png",
+        width: 1200,
+        height: 630,
+        alt: "OpenStocky - Open source stock investment portfolio tracker",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Help | OpenStocky",
+    description: "Features and KPI calculation details for OpenStocky.",
+    images: ["/og_image.png"],
   },
   alternates: {
     canonical: `${SITE_URL}/help`,
