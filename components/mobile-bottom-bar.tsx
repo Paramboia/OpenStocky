@@ -75,19 +75,6 @@ export function MobileBottomBar() {
             <span className="text-[10px] font-medium leading-tight">Export</span>
           </button>
 
-          <AddBatchDialog
-            trigger={
-              <button
-                type="button"
-                className="flex flex-1 flex-col items-center gap-0.5 py-1 text-muted-foreground transition-colors hover:text-foreground"
-                aria-label="Add batch"
-              >
-                <FileSpreadsheet className="h-5 w-5" />
-                <span className="text-[10px] font-medium leading-tight">Batch</span>
-              </button>
-            }
-          />
-
           <AddTransactionDialog
             trigger={
               <button
@@ -99,6 +86,19 @@ export function MobileBottomBar() {
                   <Plus className="h-5 w-5" />
                 </div>
                 <span className="text-[10px] font-medium leading-tight">Add</span>
+              </button>
+            }
+          />
+
+          <AddBatchDialog
+            trigger={
+              <button
+                type="button"
+                className="flex flex-1 flex-col items-center gap-0.5 py-1 text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Add batch"
+              >
+                <FileSpreadsheet className="h-5 w-5" />
+                <span className="text-[10px] font-medium leading-tight">Batch</span>
               </button>
             }
           />
