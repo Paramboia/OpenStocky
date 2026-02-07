@@ -1,7 +1,8 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
-import { TrendingUp, Activity, RefreshCw, Download } from "lucide-react"
+import { Activity, RefreshCw, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { calculatePortfolioStats } from "@/lib/portfolio-data"
@@ -62,9 +63,14 @@ export function Header() {
             className="flex items-center gap-2 sm:gap-3 text-foreground hover:opacity-90 transition-opacity"
             aria-label="OpenStocky home"
           >
-            <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
-            </div>
+            <Image
+              src="/logo.webp"
+              alt="OpenStocky logo"
+              width={36}
+              height={36}
+              className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-lg"
+              priority
+            />
             <span className="text-base sm:text-lg font-bold tracking-tight">OpenStocky</span>
           </Link>
           <div className="hidden h-5 w-px bg-border sm:block" aria-hidden />

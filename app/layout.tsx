@@ -9,6 +9,7 @@ import { StockPriceProvider } from "@/lib/stock-price-context"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { MobileBottomBar } from "@/components/mobile-bottom-bar"
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt"
 
 const geist = Geist({
   subsets: ["latin"],
@@ -59,6 +60,22 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-48x48.png", sizes: "48x48", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [
+      { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: SITE_NAME,
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -68,7 +85,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/placeholder.svg",
+        url: "/og_image.png",
         width: 1200,
         height: 630,
         alt: "OpenStocky - Open source stock investment portfolio tracker",
@@ -79,7 +96,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "OpenStocky — Open Source Stock Portfolio Tracker",
     description: SITE_DESCRIPTION,
-    images: ["/placeholder.svg"],
+    images: ["/og_image.png"],
   },
   robots: {
     index: true,
@@ -105,6 +122,8 @@ const jsonLd = {
   name: SITE_NAME,
   description: SITE_DESCRIPTION,
   url: SITE_URL,
+  image: `${SITE_URL}/og_image.png`,
+  logo: `${SITE_URL}/android-chrome-512x512.png`,
   applicationCategory: "FinanceApplication",
   operatingSystem: "Any",
   offers: {
@@ -181,6 +200,7 @@ gtag('config', 'G-2TRQWH5RF4');`,
               <div className="flex-1 pb-28 sm:pb-0">{children}</div>
               <Footer />
               <MobileBottomBar />
+              <PwaInstallPrompt />
             </div>
           </StockPriceProvider>
         </ThemeProvider>

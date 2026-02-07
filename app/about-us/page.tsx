@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Github, Terminal, GitFork, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const SITE_URL = "https://www.openstocky.com"
@@ -55,6 +55,97 @@ export default function AboutUsPage() {
           <li>Four interactive charts: growth, allocation, P/L attribution, risk vs return</li>
           <li>Open source — audit and fork the code</li>
         </ul>
+
+        <h2 className="mt-10 text-xl font-semibold text-foreground">Open Source</h2>
+        <p className="mt-2 text-muted-foreground">
+          OpenStocky is fully open source under the MIT license. You can inspect every line of code,
+          suggest improvements, report bugs, or fork the project to build your own version. Contributions
+          are welcome — whether it&apos;s a feature, a fix, or documentation.
+        </p>
+
+        <div className="mt-6 rounded-xl border border-border bg-secondary/50 p-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-foreground/10">
+              <Github className="h-5 w-5 text-foreground" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Paramboia/OpenStocky</p>
+              <p className="text-xs text-muted-foreground">GitHub Repository</p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a
+              href="https://github.com/Paramboia/OpenStocky"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button size="sm" className="gap-2">
+                <Github className="h-4 w-4" />
+                View on GitHub
+              </Button>
+            </a>
+            <a
+              href="https://github.com/Paramboia/OpenStocky/fork"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="sm" className="gap-2 border-border text-foreground hover:bg-secondary bg-transparent">
+                <GitFork className="h-4 w-4" />
+                Fork
+              </Button>
+            </a>
+            <a
+              href="https://github.com/Paramboia/OpenStocky/stargazers"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="sm" className="gap-2 border-border text-foreground hover:bg-secondary bg-transparent">
+                <Star className="h-4 w-4" />
+                Star
+              </Button>
+            </a>
+          </div>
+        </div>
+
+        <h3 className="mt-8 text-base font-semibold text-foreground flex items-center gap-2">
+          <Terminal className="h-4 w-4" />
+          Run it locally
+        </h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Clone the repo and start the dev server in a few commands. No API keys or environment variables needed.
+        </p>
+        <div className="mt-3 space-y-2">
+          <div className="rounded-lg border border-border bg-background p-4 font-mono text-sm text-foreground overflow-x-auto">
+            <p className="text-muted-foreground"># Clone the repository</p>
+            <p>git clone https://github.com/Paramboia/OpenStocky.git</p>
+            <p className="mt-3 text-muted-foreground"># Navigate into the project</p>
+            <p>cd OpenStocky</p>
+            <p className="mt-3 text-muted-foreground"># Install dependencies</p>
+            <p>npm install</p>
+            <p className="mt-3 text-muted-foreground"># Start the development server</p>
+            <p>npm run dev</p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Requires Node.js 18+ and npm. Open{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">http://localhost:3000</code>{" "}
+            after starting.
+          </p>
+        </div>
+
+        <h3 className="mt-8 text-base font-semibold text-foreground">Contributing</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Want to contribute? Here&apos;s how:
+        </p>
+        <ol className="mt-2 list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+          <li>Fork the repository</li>
+          <li>Create a feature branch</li>
+          <li>Make your changes</li>
+          <li>
+            Run <code className="rounded bg-muted px-1 py-0.5 text-xs">npm run lint</code> to check for issues
+          </li>
+          <li>Open a pull request</li>
+        </ol>
 
         <p className="mt-12 text-center text-sm text-muted-foreground">
           OpenStocky was built by{" "}
