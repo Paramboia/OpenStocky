@@ -15,7 +15,7 @@ export function PerformanceChart() {
 
   const chartData = useMemo(() => {
     // Group transactions by month and calculate cumulative portfolio value
-    const monthlyData: { month: string; invested: number; holdings: Map<string, { shares: number; avgCost: number }> }[] = []
+    const monthlyData: { month: string; invested: number; holdings: Map<string, { shares: number; totalCost: number }> }[] = []
     
     const sortedTx = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     

@@ -122,7 +122,7 @@ OpenStocky/
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/OpenStocky.git
+git clone https://github.com/Paramboia/OpenStocky.git
 cd OpenStocky
 npm install
 ```
@@ -210,7 +210,7 @@ Click **Export CSV** in the header to download all transactions. The exported fi
 
 - **No persistence** — All transactions and holdings exist only in memory. A refresh clears everything.
 - **No auth** — No accounts, passwords, or user profiles.
-- **No analytics** — No tracking of your activity.
+- **Analytics** — The site uses Google Tag Manager and Google Analytics to track anonymous traffic and usage metrics. No personal or financial data is collected.
 - **Self-hosted** — Deploy on your own infrastructure for full control.
 
 ---
@@ -233,12 +233,6 @@ Contributions are welcome. To contribute:
 3. Make your changes
 4. Run `npm run lint`
 5. Open a pull request
-
----
-
-## License
-
-MIT — See [LICENSE](LICENSE) for details.
 
 ---
 

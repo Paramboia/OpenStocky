@@ -72,7 +72,7 @@ export default function AboutUsPage() {
 
         <h2 className="mt-10 text-xl font-semibold text-foreground">Open Source</h2>
         <p className="mt-2 text-muted-foreground">
-          OpenStocky is fully open source under the MIT license. You can inspect every line of code,
+          OpenStocky is fully open source. You can inspect every line of code,
           suggest improvements, report bugs, or fork the project to build your own version. Contributions
           are welcome — whether it&apos;s a feature, a fix, or documentation.
         </p>
