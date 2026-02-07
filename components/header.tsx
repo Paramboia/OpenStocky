@@ -71,7 +71,7 @@ export function Header() {
               className="h-8 w-8 sm:h-9 sm:w-9 shrink-0 rounded-lg"
               priority
             />
-            <span className="text-base sm:text-lg font-bold tracking-tight">OpenStocky</span>
+            <span className="text-base sm:text-lg font-bold tracking-tight text-primary">OpenStocky</span>
           </Link>
           <div className="hidden h-5 w-px bg-border sm:block" aria-hidden />
           <div className="hidden items-center gap-4 sm:flex">
