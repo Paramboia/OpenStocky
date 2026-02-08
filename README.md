@@ -129,7 +129,16 @@ npm install
 
 ### Environment Variables
 
-No environment variables are required. Stock prices are fetched via Yahoo Finance with no API key needed.
+No environment variables are required to run the app. Stock prices are fetched via Yahoo Finance with no API key needed.
+
+Optionally, you can enable Google Analytics and Tag Manager by setting these in a `.env.local` file (see `.env.example`):
+
+| Variable              | Description                          | Required |
+|----------------------|--------------------------------------|----------|
+| `NEXT_PUBLIC_GTM_ID` | Google Tag Manager container ID      | No       |
+| `NEXT_PUBLIC_GA_ID`  | Google Analytics 4 measurement ID    | No       |
+
+If not set, analytics scripts are simply not loaded.
 
 ### Run Locally
 
