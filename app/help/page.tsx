@@ -77,6 +77,28 @@ export default function HelpPage() {
           Click <strong>Export CSV</strong> in the header to download all your transactions as a CSV file. The exported file uses the same column format as the batch upload (Transaction Date, Transaction Type, Symbol, Shares, Price per Share, Fees), so you can re-import it later via batch upload.
         </p>
 
+        <h3 className="mt-6 text-base font-semibold text-foreground">Market Performance</h3>
+        <p className="mt-2 text-muted-foreground">
+          The <strong>Market</strong> tab shows recent price performance and fundamentals for every stock you hold. Data is fetched from Yahoo Finance using daily closing prices and real-time quote data.
+        </p>
+        <ul className="mt-2 list-disc list-inside space-y-1 text-muted-foreground">
+          <li>
+            <strong>1D / 7D / 1M:</strong> Price change (absolute and percentage) over the last 1 day, 7 days, and ~21 calendar days respectively. 7D and 1M are computed from daily historical closing prices.
+          </li>
+          <li>
+            <strong>P/E:</strong> Trailing price-to-earnings ratio — current price divided by earnings per share over the last 12 months. Not available for ETFs or companies with negative earnings.
+          </li>
+          <li>
+            <strong>52W Range:</strong> Visual bar showing where the current price sits between the 52-week low and high. Green near highs, red near lows. Hover for exact values.
+          </li>
+          <li>
+            <strong>Mkt Cap:</strong> Total market capitalization of the company.
+          </li>
+          <li>
+            <strong>Div Yield:</strong> Trailing annual dividend yield as a percentage of the current price. Shows &quot;—&quot; for non-dividend-paying stocks.
+          </li>
+        </ul>
+
         <h3 className="mt-6 text-base font-semibold text-foreground">Live Prices</h3>
         <p className="mt-2 text-muted-foreground">
           Stock prices come from Yahoo Finance via the <code className="rounded bg-muted px-1 py-0.5 text-xs">yahoo-finance2</code> library. No API key is required. All symbols are fetched in a single batch call with no rate limits or daily caps. Prices are cached for 60 seconds.

@@ -66,10 +66,10 @@ function ChangeCell({ change, changePercent }: { change: number | null; changePe
   return (
     <div className="flex flex-col items-end gap-0.5">
       <span className={`font-medium ${positive ? "text-primary" : "text-destructive"}`}>
-        {positive ? "+" : ""}${change.toFixed(2)}
+        {positive ? "+" : ""}{changePercent.toFixed(2)}%
       </span>
       <span className={`text-xs ${positive ? "text-primary/70" : "text-destructive/70"}`}>
-        {positive ? "+" : ""}{changePercent.toFixed(2)}%
+        {positive ? "+" : ""}${change.toFixed(2)}
       </span>
     </div>
   )

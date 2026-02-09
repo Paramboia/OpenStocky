@@ -93,18 +93,26 @@ export function calculateHoldings(
     if (value.shares > 0.01) {
       const currentPrice = prices[symbol] || 0
       const currentValue = value.shares * currentPrice
-      const gainLoss = currentValue - value.totalCost
-      const gainLossPercent = value.totalCost > 0 ? (gainLoss / value.totalCost) * 100 : 0
+
+      // Compute cost basis from remaining FIFO lots — this reflects
+      // the actual cost of the shares still held, not the blended
+      // average across all historical buys.
+      const remainingLots = fifoLots.get(symbol) || []
+      const fifoCost = remainingLots.reduce((sum, lot) => sum + lot.shares * lot.costPerShare, 0)
+      const totalCost = fifoCost > 0 ? fifoCost : value.totalCost
+
+      const gainLoss = currentValue - totalCost
+      const gainLossPercent = totalCost > 0 ? (gainLoss / totalCost) * 100 : 0
       const realizedGainLoss = realizedMap.get(symbol) || 0
       const totalReturn = gainLoss + realizedGainLoss
-      const totalBuyCost = totalBuyCostMap.get(symbol) || value.totalCost
+      const totalBuyCost = totalBuyCostMap.get(symbol) || totalCost
       const totalReturnPercent = totalBuyCost > 0 ? (totalReturn / totalBuyCost) * 100 : 0
 
       holdings.push({
         symbol,
         shares: value.shares,
-        avgCost: value.totalCost / value.shares,
-        totalCost: value.totalCost,
+        avgCost: totalCost / value.shares,
+        totalCost,
         currentPrice,
         currentValue,
         gainLoss,

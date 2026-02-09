@@ -50,6 +50,7 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 
 - **Holdings table** — Sortable columns (symbol, shares, avg cost, price, value, unrealized P/L, total return, allocation), search with clear button
 - **Transactions table** — Paginated list, search by symbol, filter by buy/sell, swipe-to-delete on mobile
+- **Market Performance table** — Recent price performance for every held stock: 1-day, 7-day, and 1-month price changes (absolute + %), trailing P/E, 52-week range position (visual bar), market cap, and dividend yield. All columns sortable.
 - **Portfolio Growth chart** — Area chart of net invested vs portfolio value over the last 24 months, using actual monthly closing prices from Yahoo Finance
 - **Allocation chart** — Donut chart of portfolio weights (top 10 holdings + "Other")
 - **P/L Attribution chart** — Horizontal bar chart of each position's total return (unrealized + realized), sorted best to worst
@@ -79,6 +80,7 @@ OpenStocky/
 ├── app/
 │   ├── api/stock-prices/route.ts            # Yahoo Finance live price API
 │   ├── api/stock-prices/historical/route.ts # Monthly historical prices API
+│   ├── api/stock-prices/performance/route.ts # Daily performance & fundamentals API
 │   ├── about-us/page.tsx           # About page
 │   ├── help/page.tsx               # Help & KPI documentation
 │   ├── globals.css
@@ -94,6 +96,7 @@ OpenStocky/
 │   │   ├── add-transaction-dialog.tsx
 │   │   ├── allocation-chart.tsx    # Donut chart
 │   │   ├── holdings-table.tsx      # Holdings with total return
+│   │   ├── market-performance-table.tsx # Market performance (1D/7D/1M, PE, 52W)
 │   │   ├── performance-chart.tsx   # Invested vs value over time
 │   │   ├── pl-attribution-chart.tsx # P/L attribution bar chart
 │   │   ├── portfolio-content.tsx   # Main layout
@@ -234,6 +237,40 @@ Click **Export CSV** in the header to download all transactions. The exported fi
 - Uses the `yahoo-finance2` `historical()` method with `interval: "1mo"`.
 - `months` parameter controls how far back to fetch (default 25, max 120).
 - Cached for 1 hour — historical data rarely changes.
+
+### Market Performance
+
+**Endpoint:** `GET /api/stock-prices/performance?symbols=AAPL,GOOGL`
+
+**Response:**
+
+```json
+{
+  "performance": {
+    "AAPL": {
+      "symbol": "AAPL",
+      "price": 185.42,
+      "change1D": 2.15,
+      "changePercent1D": 1.17,
+      "change7D": -3.40,
+      "changePercent7D": -1.80,
+      "change1M": 8.20,
+      "changePercent1M": 4.63,
+      "trailingPE": 29.5,
+      "fiftyTwoWeekHigh": 199.62,
+      "fiftyTwoWeekLow": 155.98,
+      "fiftyTwoWeekPosition": 67.5,
+      "marketCap": 2850000000000,
+      "dividendYield": 0.52
+    }
+  },
+  "lastUpdated": "2025-02-06T12:00:00.000Z"
+}
+```
+
+- Combines real-time quote data (1D change, P/E, 52W range, market cap, dividend yield) with daily historical prices (7D and 1M changes).
+- Uses the `yahoo-finance2` `chart()` API for daily OHLCV data, with `historical()` as fallback.
+- Cached for 5 minutes.
 
 ---
 
