@@ -31,10 +31,8 @@ export async function GET(request: Request) {
   const errors: string[] = []
 
   try {
-    // Fetch all symbols in parallel — yahoo-finance2 quote() accepts an array
+    // --- 1. Batch quote for prices ---
     const results = await yahooFinance.quote(symbolList, {}, { validateResult: false })
-
-    // quote() returns a single object for one symbol, or an array for multiple
     const quotesArray = Array.isArray(results) ? results : [results]
 
     for (const quote of quotesArray) {
@@ -46,13 +44,6 @@ export async function GET(request: Request) {
       if (symbol && typeof price === "number" && Number.isFinite(price)) {
         prices[symbol] = price
       }
-
-      // Extract beta for portfolio risk calculation
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const beta = (quote as any).beta
-      if (symbol && typeof beta === "number" && Number.isFinite(beta)) {
-        betas[symbol] = beta
-      }
     }
   } catch (error) {
     console.error("Yahoo Finance batch quote error:", error)
@@ -60,21 +51,43 @@ export async function GET(request: Request) {
 
     // If the batch call fails, try symbols individually as fallback
     for (const sym of symbolList) {
-      if (prices[sym] !== undefined) continue // already have it
+      if (prices[sym] !== undefined) continue
       try {
         const quote = await yahooFinance.quote(sym)
         if (quote?.regularMarketPrice && quote.symbol) {
           prices[quote.symbol.toUpperCase()] = quote.regularMarketPrice
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const beta = (quote as any).beta
-          if (typeof beta === "number" && Number.isFinite(beta)) {
-            betas[quote.symbol.toUpperCase()] = beta
-          }
         }
       } catch {
         // Individual symbol failed — could be delisted or invalid
       }
     }
+  }
+
+  // --- 2. Fetch per-stock betas via quoteSummary (parallel, non-blocking) ---
+  // Beta is only available in the defaultKeyStatistics module, not in quote().
+  try {
+    const betaResults = await Promise.allSettled(
+      symbolList.map(async (sym) => {
+        try {
+          const summary = await yahooFinance.quoteSummary(sym, {
+            modules: ["defaultKeyStatistics"],
+          })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const beta = (summary as any)?.defaultKeyStatistics?.beta
+          return { sym, beta: typeof beta === "number" && Number.isFinite(beta) ? beta : null }
+        } catch {
+          return { sym, beta: null }
+        }
+      }),
+    )
+
+    for (const r of betaResults) {
+      if (r.status === "fulfilled" && r.value.beta !== null) {
+        betas[r.value.sym] = r.value.beta
+      }
+    }
+  } catch (error) {
+    console.error("Beta fetch error (non-critical):", error)
   }
 
   const missingSymbols = symbolList.filter((s) => prices[s] === undefined)

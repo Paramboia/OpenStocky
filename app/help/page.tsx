@@ -63,7 +63,10 @@ export default function HelpPage() {
             <strong>Batch upload:</strong> Paste CSV data with columns: Transaction Date, Transaction Type, Symbol, Shares, Price per Share, Fees. Use comma or tab separators. Choose &quot;Add to current&quot; to append, or &quot;Override&quot; to replace all transactions.
           </li>
           <li>
-            <strong>Cost basis:</strong> Buys add to cost basis; sells use FIFO (first-in, first-out) to compute realized gains.
+            <strong>Cost basis:</strong> Buys add to cost basis; sells use FIFO (first-in, first-out) to compute realized gains. Transactions are automatically sorted by date before processing.
+          </li>
+          <li>
+            <strong>Short-sell protection:</strong> Sell transactions are clamped so you cannot sell more shares than you currently hold for a given symbol.
           </li>
         </ul>
 
@@ -129,9 +132,9 @@ export default function HelpPage() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground">Risk vs Return</h3>
+            <h3 className="font-semibold text-foreground">Weight vs Return</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Scatter plot where each position is a bubble. The x-axis represents portfolio weight (concentration risk), the y-axis represents <strong>total return %</strong> (unrealized + realized), and bubble size reflects position value. A dashed line at 0% separates winners from losers. Positions in the top-right quadrant are large and profitable (ideal); bottom-right are large losers that may need attention; top-left are small winners you could consider sizing up.
+              Scatter plot where each position is a bubble. The x-axis represents portfolio weight (allocation), the y-axis represents <strong>total return %</strong> (unrealized + realized), and bubble size reflects position value. A dashed line at 0% separates winners from losers. Positions in the top-right quadrant are large and profitable (ideal); bottom-right are large losers that may need attention; top-left are small winners you could consider sizing up.
             </p>
           </div>
         </div>
@@ -202,35 +205,35 @@ export default function HelpPage() {
           <div>
             <h3 className="font-semibold text-foreground">Sharpe Ratio</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              (Average position return − 5%) ÷ volatility. Uses 5% as risk-free proxy. Volatility = standard deviation of each holding&apos;s gain/loss %. Higher = better risk-adjusted return.
+              (IRR − 5%) ÷ annualized volatility. Uses IRR as the annualized return and 5% as risk-free proxy. Higher = better risk-adjusted return. Requires at least 3 months of history.
             </p>
           </div>
 
           <div>
             <h3 className="font-semibold text-foreground">Volatility</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Standard deviation of gain/loss % across all positions. Measures dispersion of returns.
+              Annualized standard deviation of monthly portfolio returns, computed using the Modified Dietz method to account for cash flows (buys and sells). Monthly return = (V<sub>end</sub> − V<sub>start</sub> − CF) ÷ (V<sub>start</sub> + 0.5 × CF), then annualized by multiplying by √12. Requires historical prices.
             </p>
           </div>
 
           <div>
             <h3 className="font-semibold text-foreground">Win Rate</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              (Number of positions with positive P/L ÷ total positions) × 100.
+              (Number of profitable positions ÷ total positions) × 100. Includes both open positions (unrealized P/L) and closed trades (realized P/L from sells).
             </p>
           </div>
 
           <div>
             <h3 className="font-semibold text-foreground">Profit Factor</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Sum of gains from winning positions ÷ sum of losses from losing positions. &gt; 1 means profits exceed losses.
+              Sum of gains from winners ÷ sum of losses from losers, across both open and closed positions. &gt; 1 means profits exceed losses.
             </p>
           </div>
 
           <div>
             <h3 className="font-semibold text-foreground">Risk/Reward Ratio</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Average win (avg P/L of winning positions) ÷ average loss (avg absolute P/L of losing positions).
+              Average win ÷ average loss, including both open and closed positions.
             </p>
           </div>
 
@@ -249,9 +252,9 @@ export default function HelpPage() {
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground">Beta (estimate)</h3>
+            <h3 className="font-semibold text-foreground">Beta</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Simplified: 1 + (tech weight × 0.5). Tech-heavy portfolios are assumed more volatile. Real beta requires historical price data.
+              Value-weighted average of per-stock betas fetched from Yahoo Finance. Each holding&apos;s beta is weighted by its share of portfolio value. Stocks without beta data default to 1.0 (market average). A portfolio beta above 1 suggests higher volatility than the market; below 1 suggests lower.
             </p>
           </div>
 

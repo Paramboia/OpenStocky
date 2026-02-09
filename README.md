@@ -33,12 +33,12 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 **Advanced performance metrics:**
 - **IRR** (Internal Rate of Return) — Money-weighted annualized return
 - **CAGR** (Compound Annual Growth Rate) — Based on net invested capital
-- **Sharpe Ratio** — Risk-adjusted return vs volatility
-- **Volatility** — Standard deviation of position returns
-- **Win Rate** — Percentage of positions in profit
-- **Profit Factor** — Gross profits / gross losses
-- **Risk/Reward Ratio** — Average win / average loss
-- **Beta (estimate)** — Portfolio volatility vs market (sector-based approximation)
+- **Sharpe Ratio** — (IRR − risk-free rate) / annualized portfolio volatility
+- **Volatility** — Annualized std dev of monthly portfolio returns (Modified Dietz method)
+- **Win Rate** — Percentage of open and closed positions in profit
+- **Profit Factor** — Gross profits / gross losses (open + closed positions)
+- **Risk/Reward Ratio** — Average win / average loss (open + closed positions)
+- **Beta** — Value-weighted average of per-stock betas from Yahoo Finance
 
 **Portfolio composition:**
 - Number of positions & average position size
@@ -54,7 +54,7 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 - **Portfolio Growth chart** — Area chart of net invested vs portfolio value over the last 24 months, using actual monthly closing prices from Yahoo Finance
 - **Allocation chart** — Donut chart of portfolio weights (top 10 holdings + "Other")
 - **P/L Attribution chart** — Horizontal bar chart of each position's total return (unrealized + realized), sorted best to worst
-- **Risk vs Return chart** — Scatter/bubble plot: portfolio weight vs total return %, sized by position value
+- **Weight vs Return chart** — Scatter/bubble plot: portfolio weight vs total return %, sized by position value
 - **Info tooltips** — Every chart title has an (i) icon explaining how to read it
 
 ---
@@ -101,7 +101,7 @@ OpenStocky/
 │   │   ├── pl-attribution-chart.tsx # P/L attribution bar chart
 │   │   ├── portfolio-content.tsx   # Main layout
 │   │   ├── portfolio-header.tsx    # KPIs and metrics
-│   │   ├── risk-return-chart.tsx   # Risk vs return scatter
+│   │   ├── risk-return-chart.tsx   # Weight vs return scatter
 │   │   └── transactions-table.tsx
 │   ├── theme-provider.tsx
 │   ├── theme-toggle.tsx
@@ -205,6 +205,7 @@ Click **Export CSV** in the header to download all transactions. The exported fi
 ```json
 {
   "prices": { "AAPL": 185.42, "GOOGL": 142.10, "MSFT": 415.30 },
+  "betas": { "AAPL": 1.24, "GOOGL": 1.06, "MSFT": 0.89 },
   "missingSymbols": [],
   "partial": false,
   "lastUpdated": "2025-02-06T12:00:00.000Z",
@@ -213,7 +214,7 @@ Click **Export CSV** in the header to download all transactions. The exported fi
 ```
 
 - **No API key required** — Uses [`yahoo-finance2`](https://github.com/gadicc/yahoo-finance2), a community-maintained library for Yahoo Finance data.
-- **No rate limits** — All symbols are fetched in a single batch call. No delays, no daily caps.
+- **No rate limits** — Prices are fetched via a single batch `quote()` call. Per-stock betas are fetched in parallel via `quoteSummary()`.
 - Prices are cached for 60 seconds via `Cache-Control` headers.
 - Up to 100 symbols per request (sane cap to keep payloads reasonable).
 
