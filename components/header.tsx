@@ -55,7 +55,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-10">
+      <div className="flex h-14 w-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Brand + stats */}
         <div className="flex items-center gap-3 sm:gap-4">
           <Link
@@ -114,7 +114,7 @@ export function Header() {
       </div>
 
       {/* Mobile: compact stats row — visible only on mobile */}
-      <div className="mx-auto flex w-full max-w-[1600px] items-center gap-2 px-4 pb-2.5 pt-0 sm:hidden">
+      <div className="flex w-full items-center gap-2 px-4 pb-2.5 pt-0 sm:hidden">
         <span className="text-[11px] text-muted-foreground">
           {stats.daysInMarket.toLocaleString()} days ({stats.yearsInvested.toFixed(1)}y)
         </span>
