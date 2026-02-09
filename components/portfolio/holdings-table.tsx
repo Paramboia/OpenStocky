@@ -193,13 +193,12 @@ export function HoldingsTable() {
                       ${Math.round(holding.currentValue).toLocaleString("en-US")}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {isPositive ? (
-                          <ArrowUpRight className="h-4 w-4 text-primary" />
-                        ) : (
-                          <ArrowDownRight className="h-4 w-4 text-destructive" />
-                        )}
-                        <span className={isPositive ? "text-primary" : "text-destructive"}>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className={`font-medium ${isPositive ? "text-primary" : "text-destructive"}`}>
+                          {isPositive ? "+" : ""}$
+                          {Math.round(holding.gainLoss).toLocaleString("en-US")}
+                        </span>
+                        <span className={`text-xs ${isPositive ? "text-primary/70" : "text-destructive/70"}`}>
                           {isPositive ? "+" : ""}
                           {holding.gainLossPercent.toFixed(1)}%
                         </span>
