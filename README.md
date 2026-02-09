@@ -50,7 +50,7 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 
 - **Holdings table** — Sortable columns (symbol, shares, avg cost, price, value, unrealized P/L, total return, allocation), search with clear button
 - **Transactions table** — Paginated list, search by symbol, filter by buy/sell, swipe-to-delete on mobile
-- **Portfolio Growth chart** — Area chart of net invested vs portfolio value over the last 24 months
+- **Portfolio Growth chart** — Area chart of net invested vs portfolio value over the last 24 months, using actual monthly closing prices from Yahoo Finance
 - **Allocation chart** — Donut chart of portfolio weights (top 10 holdings + "Other")
 - **P/L Attribution chart** — Horizontal bar chart of each position's total return (unrealized + realized), sorted best to worst
 - **Risk vs Return chart** — Scatter/bubble plot: portfolio weight vs total return %, sized by position value
@@ -77,7 +77,8 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 ```
 OpenStocky/
 ├── app/
-│   ├── api/stock-prices/route.ts   # Yahoo Finance stock price API
+│   ├── api/stock-prices/route.ts            # Yahoo Finance live price API
+│   ├── api/stock-prices/historical/route.ts # Monthly historical prices API
 │   ├── about-us/page.tsx           # About page
 │   ├── help/page.tsx               # Help & KPI documentation
 │   ├── globals.css
@@ -213,6 +214,27 @@ Click **Export CSV** in the header to download all transactions. The exported fi
 - Prices are cached for 60 seconds via `Cache-Control` headers.
 - Up to 100 symbols per request (sane cap to keep payloads reasonable).
 
+### Historical Prices
+
+**Endpoint:** `GET /api/stock-prices/historical?symbols=AAPL,GOOGL&months=25`
+
+**Response:**
+
+```json
+{
+  "prices": {
+    "AAPL": { "2024-01": 185.42, "2024-02": 190.75, "2024-03": 171.30 },
+    "GOOGL": { "2024-01": 142.10, "2024-02": 147.50, "2024-03": 155.20 }
+  },
+  "lastUpdated": "2025-02-06T12:00:00.000Z"
+}
+```
+
+- Returns monthly adjusted closing prices for each symbol.
+- Uses the `yahoo-finance2` `historical()` method with `interval: "1mo"`.
+- `months` parameter controls how far back to fetch (default 25, max 120).
+- Cached for 1 hour — historical data rarely changes.
+
 ---
 
 ## Data & Privacy
@@ -229,7 +251,7 @@ Click **Export CSV** in the header to download all transactions. The exported fi
 1. **Session-only data** — Refreshing or closing the tab wipes all transactions. Use Export CSV to back up and batch upload to reimport.
 2. **Yahoo Finance (unofficial)** — The `yahoo-finance2` library uses Yahoo's unofficial API. While the community has kept it working since 2013, Yahoo may change their endpoints at any time.
 3. **US equities focus** — Yahoo Finance supports global symbols, but ticker validation is tuned for common US conventions.
-4. **Historical performance** — The growth chart uses current prices for past months; true historical performance would require historical price data.
+4. **Historical performance** — The growth chart uses monthly closing prices from Yahoo Finance for the last 24 months. Months without historical data fall back to the nearest available price or cost basis.
 
 ---
 

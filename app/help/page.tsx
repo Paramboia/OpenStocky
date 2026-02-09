@@ -88,7 +88,7 @@ export default function HelpPage() {
           <div>
             <h3 className="font-semibold text-foreground">Portfolio Growth</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Area chart tracking net invested capital (blue) vs estimated portfolio value (green) over the last 24 months. The gap between the two lines represents unrealized gain or loss. Monthly snapshots are derived from transaction history; portfolio value uses current live prices as an approximation for past months.
+              Area chart tracking net invested capital (blue) vs portfolio value (green) over the last 24 months. The gap between the two lines represents unrealized gain or loss. Monthly snapshots are derived from transaction history; portfolio value uses actual monthly closing prices from Yahoo Finance. The current month uses live prices. Months without historical data fall back to the nearest available price or cost basis.
             </p>
           </div>
 

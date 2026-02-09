@@ -1,33 +1,80 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts"
-import { Info } from "lucide-react"
+import { Info, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { useTransactions } from "@/lib/transactions-store"
 
+type HistoricalPrices = Record<string, Record<string, number>>
+
+/** Generate all YYYY-MM keys from `start` to `end` inclusive. */
+function monthKeys(start: string, end: string): string[] {
+  const keys: string[] = []
+  let [y, m] = start.split("-").map(Number)
+  const [ey, em] = end.split("-").map(Number)
+  while (y < ey || (y === ey && m <= em)) {
+    keys.push(`${y}-${String(m).padStart(2, "0")}`)
+    m++
+    if (m > 12) { m = 1; y++ }
+  }
+  return keys
+}
+
 export function PerformanceChart() {
   const { prices: livePrices } = useStockPrices()
-  const prices = Object.keys(livePrices).length > 0 ? livePrices : {}
   const transactions = useTransactions()
+  const [historicalPrices, setHistoricalPrices] = useState<HistoricalPrices>({})
+  const [loading, setLoading] = useState(false)
+
+  // All unique symbols that were ever transacted (needed for historical price fetch)
+  const allSymbols = useMemo(() => {
+    const set = new Set<string>()
+    for (const tx of transactions) set.add(tx.symbol)
+    return Array.from(set)
+  }, [transactions])
+
+  // Stable string key so the effect doesn't re-fire when the array ref changes
+  const symbolsKey = allSymbols.join(",")
+
+  // Fetch monthly historical prices
+  useEffect(() => {
+    if (!symbolsKey) return
+    let cancelled = false
+    setLoading(true)
+
+    fetch(`/api/stock-prices/historical?symbols=${symbolsKey}&months=25`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data.prices) setHistoricalPrices(data.prices)
+      })
+      .catch((err) => console.error("Failed to fetch historical prices:", err))
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => { cancelled = true }
+  }, [symbolsKey])
 
   const chartData = useMemo(() => {
-    // Group transactions by month and calculate cumulative portfolio value
-    const monthlyData: { month: string; invested: number; holdings: Map<string, { shares: number; totalCost: number }> }[] = []
-    
-    const sortedTx = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    
+    if (transactions.length === 0) return []
+
+    // --- Phase 1: Build sparse monthly snapshots from transactions ---
+    const snapshots = new Map<string, { invested: number; holdings: Map<string, { shares: number; totalCost: number }> }>()
+
+    const sortedTx = [...transactions].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    )
+
     let cumulativeInvested = 0
     const holdings = new Map<string, { shares: number; totalCost: number }>()
 
     for (const tx of sortedTx) {
-      const date = new Date(tx.date)
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-      
+      // Use string slicing to avoid timezone issues (dates are YYYY-MM-DD)
+      const monthKey = tx.date.substring(0, 7)
+
       const current = holdings.get(tx.symbol) || { shares: 0, totalCost: 0 }
-      
+
       if (tx.type === "buy") {
         current.shares += tx.shares
         current.totalCost += tx.transactionCost
@@ -36,48 +83,93 @@ export function PerformanceChart() {
         const avgCost = current.shares > 0 ? current.totalCost / current.shares : 0
         current.shares -= tx.shares
         current.totalCost = Math.max(0, current.shares * avgCost)
-        // Sells reduce invested amount by realized value
         cumulativeInvested -= tx.transactionCost
       }
-      
+
       holdings.set(tx.symbol, current)
-      
-      // Update or add monthly entry
-      const existingIndex = monthlyData.findIndex((d) => d.month === monthKey)
-      const holdingsCopy = new Map(holdings)
-      
-      if (existingIndex >= 0) {
-        monthlyData[existingIndex] = {
-          month: monthKey,
-          invested: cumulativeInvested,
-          holdings: holdingsCopy,
-        }
-      } else {
-        monthlyData.push({
-          month: monthKey,
-          invested: cumulativeInvested,
-          holdings: holdingsCopy,
-        })
-      }
+
+      // Snapshot the state at end of this month (overwrites if multiple txs in same month)
+      snapshots.set(monthKey, {
+        invested: cumulativeInvested,
+        holdings: new Map(Array.from(holdings, ([s, h]) => [s, { ...h }])),
+      })
     }
 
-    // Calculate estimated value for each month (using current prices as approximation)
-    return monthlyData.map((d) => {
-      let estimatedValue = 0
-      d.holdings.forEach((h, symbol) => {
-        if (h.shares > 0) {
-          const price = prices[symbol] || h.totalCost / h.shares
-          estimatedValue += h.shares * price
+    // --- Phase 2: Build continuous monthly series (fill gaps) ---
+    const firstMonth = sortedTx[0].date.substring(0, 7)
+    const now = new Date()
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+    const allMonths = monthKeys(firstMonth, currentMonthKey)
+
+    type MonthEntry = { month: string; invested: number; holdings: Map<string, { shares: number; totalCost: number }> }
+    const continuous: MonthEntry[] = []
+    let lastSnap: MonthEntry | null = null
+
+    for (const mk of allMonths) {
+      const snap = snapshots.get(mk)
+      if (snap) {
+        lastSnap = { month: mk, ...snap }
+      } else if (lastSnap) {
+        // Carry forward previous month's holdings
+        lastSnap = {
+          month: mk,
+          invested: lastSnap.invested,
+          holdings: new Map(Array.from(lastSnap.holdings, ([s, h]) => [s, { ...h }])),
         }
+      }
+      if (lastSnap) continuous.push(lastSnap)
+    }
+
+    // --- Phase 3: Value each month using historical prices ---
+    const hasHistorical = Object.keys(historicalPrices).length > 0
+
+    return continuous.map((d) => {
+      let estimatedValue = 0
+
+      d.holdings.forEach((h, symbol) => {
+        if (h.shares <= 0) return
+
+        let price: number | undefined
+
+        // Current month → prefer live prices
+        if (d.month === currentMonthKey && livePrices[symbol] != null) {
+          price = livePrices[symbol]
+        }
+
+        // Historical price for this exact month
+        if (price === undefined && hasHistorical) {
+          price = historicalPrices[symbol]?.[d.month]
+        }
+
+        // Carry-forward: most recent historical price before this month
+        if (price === undefined && hasHistorical) {
+          const symbolPrices = historicalPrices[symbol]
+          if (symbolPrices) {
+            const months = Object.keys(symbolPrices).sort()
+            for (let i = months.length - 1; i >= 0; i--) {
+              if (months[i] <= d.month) {
+                price = symbolPrices[months[i]]
+                break
+              }
+            }
+          }
+        }
+
+        // Last resort: use average cost basis
+        if (price === undefined) {
+          price = h.shares > 0 ? h.totalCost / h.shares : 0
+        }
+
+        estimatedValue += h.shares * price
       })
-      
+
       return {
         month: d.month,
         invested: Math.max(0, d.invested),
         value: Math.max(0, estimatedValue),
       }
     }).slice(-24) // Last 24 months
-  }, [prices, transactions])
+  }, [transactions, historicalPrices, livePrices])
 
   const formatMonth = (month: string) => {
     const [year, m] = month.split("-")
@@ -104,13 +196,14 @@ export function PerformanceChart() {
   const chartTitle = (
     <CardTitle className="flex items-center gap-2 text-foreground">
       Portfolio Growth
+      {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
       <TooltipProvider delayDuration={100}>
         <UiTooltip>
           <TooltipTrigger asChild>
             <Info className="h-4 w-4 text-muted-foreground cursor-help" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
-            <p className="text-sm">Tracks net invested capital vs estimated portfolio value over the last 24 months. The gap between the two lines represents unrealized gain or loss.</p>
+            <p className="text-sm">Tracks net invested capital vs portfolio value over the last 24 months using actual monthly closing prices from Yahoo Finance. The current month uses live prices.</p>
           </TooltipContent>
         </UiTooltip>
       </TooltipProvider>

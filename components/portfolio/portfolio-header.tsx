@@ -139,7 +139,7 @@ export function PortfolioHeader() {
               </div>
             </KpiTooltip>
 
-            <KpiTooltip content="Compound Annual Growth Rate - Smoothed annual return assuming constant growth rate">
+            <KpiTooltip content="Compound Annual Growth Rate based on net invested capital (total buys minus total sell proceeds) vs current portfolio value. May differ from simple beginning/ending value CAGR formulas">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" /> CAGR
