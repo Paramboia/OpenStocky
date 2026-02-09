@@ -82,6 +82,11 @@ export function Header() {
               <Activity className="h-3.5 w-3.5" />
               <span>{stats.totalTransactions} transactions</span>
             </div>
+            {lastUpdated && (
+              <span className="text-xs text-muted-foreground">
+                Updated {formatLastUpdated(lastUpdated)}
+              </span>
+            )}
           </div>
         </div>
 
