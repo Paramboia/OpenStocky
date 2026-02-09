@@ -15,10 +15,12 @@ function monthKeys(start: string, end: string): string[] {
   const keys: string[] = []
   let [y, m] = start.split("-").map(Number)
   const [ey, em] = end.split("-").map(Number)
+  if (isNaN(y) || isNaN(m) || isNaN(ey) || isNaN(em)) return keys
   while (y < ey || (y === ey && m <= em)) {
     keys.push(`${y}-${String(m).padStart(2, "0")}`)
     m++
     if (m > 12) { m = 1; y++ }
+    if (keys.length > 1200) break // Safety cap: 100 years
   }
   return keys
 }
@@ -70,8 +72,8 @@ export function PerformanceChart() {
     const holdings = new Map<string, { shares: number; totalCost: number }>()
 
     for (const tx of sortedTx) {
-      // Use string slicing to avoid timezone issues (dates are YYYY-MM-DD)
-      const monthKey = tx.date.substring(0, 7)
+      const txDate = new Date(tx.date)
+      const monthKey = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, "0")}`
 
       const current = holdings.get(tx.symbol) || { shares: 0, totalCost: 0 }
 
@@ -96,7 +98,8 @@ export function PerformanceChart() {
     }
 
     // --- Phase 2: Build continuous monthly series (fill gaps) ---
-    const firstMonth = sortedTx[0].date.substring(0, 7)
+    const firstTxDate = new Date(sortedTx[0].date)
+    const firstMonth = `${firstTxDate.getFullYear()}-${String(firstTxDate.getMonth() + 1).padStart(2, "0")}`
     const now = new Date()
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
     const allMonths = monthKeys(firstMonth, currentMonthKey)
