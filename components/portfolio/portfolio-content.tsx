@@ -36,26 +36,26 @@ export function PortfolioContent() {
                 Holdings
               </TabsTrigger>
               <TabsTrigger 
-                value="transactions" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
-              >
-                Transactions
-              </TabsTrigger>
-              <TabsTrigger 
                 value="market" 
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
               >
                 Market
               </TabsTrigger>
+              <TabsTrigger 
+                value="transactions" 
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
+              >
+                Transactions
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="holdings" className="mt-6">
               <HoldingsTable />
             </TabsContent>
-            <TabsContent value="transactions" className="mt-6">
-              <TransactionsTable />
-            </TabsContent>
             <TabsContent value="market" className="mt-6">
               <MarketPerformanceTable />
+            </TabsContent>
+            <TabsContent value="transactions" className="mt-6">
+              <TransactionsTable />
             </TabsContent>
           </Tabs>
         </div>
