@@ -27,6 +27,7 @@ export async function GET(request: Request) {
   }
 
   const prices: Record<string, number> = {}
+  const betas: Record<string, number> = {}
   const errors: string[] = []
 
   try {
@@ -45,6 +46,13 @@ export async function GET(request: Request) {
       if (symbol && typeof price === "number" && Number.isFinite(price)) {
         prices[symbol] = price
       }
+
+      // Extract beta for portfolio risk calculation
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const beta = (quote as any).beta
+      if (symbol && typeof beta === "number" && Number.isFinite(beta)) {
+        betas[symbol] = beta
+      }
     }
   } catch (error) {
     console.error("Yahoo Finance batch quote error:", error)
@@ -57,6 +65,11 @@ export async function GET(request: Request) {
         const quote = await yahooFinance.quote(sym)
         if (quote?.regularMarketPrice && quote.symbol) {
           prices[quote.symbol.toUpperCase()] = quote.regularMarketPrice
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const beta = (quote as any).beta
+          if (typeof beta === "number" && Number.isFinite(beta)) {
+            betas[quote.symbol.toUpperCase()] = beta
+          }
         }
       } catch {
         // Individual symbol failed — could be delisted or invalid
@@ -69,6 +82,7 @@ export async function GET(request: Request) {
   return NextResponse.json(
     {
       prices,
+      betas,
       missingSymbols,
       partial: missingSymbols.length > 0,
       lastUpdated: new Date().toISOString(),

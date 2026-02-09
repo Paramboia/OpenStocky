@@ -6,6 +6,7 @@ import { useTransactions } from "@/lib/transactions-store"
 
 interface StockPriceContextType {
   prices: Record<string, number>
+  betas: Record<string, number>
   isLoading: boolean
   isError: boolean
   lastUpdated: string | null
@@ -74,8 +75,20 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
     return next
   }, [data?.prices, symbols])
 
+  const filteredBetas = useMemo(() => {
+    if (!data?.betas || symbols.length === 0) return {}
+    const next: Record<string, number> = {}
+    for (const symbol of symbols) {
+      if (data.betas[symbol] !== undefined) {
+        next[symbol] = data.betas[symbol]
+      }
+    }
+    return next
+  }, [data?.betas, symbols])
+
   const value: StockPriceContextType = {
     prices: filteredPrices,
+    betas: filteredBetas,
     isLoading,
     isError: !!error,
     lastUpdated: data?.lastUpdated || null,

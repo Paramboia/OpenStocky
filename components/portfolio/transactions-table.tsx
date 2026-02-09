@@ -234,7 +234,7 @@ export function TransactionsTable() {
                         </div>
                         <div className="flex items-center justify-end gap-3">
                           <span className="text-right font-medium">
-                            ${tx.transactionCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ${Math.round(tx.transactionCost).toLocaleString("en-US")}
                           </span>
                         </div>
                       </div>

@@ -101,7 +101,11 @@ export function AddTransactionDialog({ trigger }: AddTransactionDialogProps) {
     const shares = Number.parseFloat(formData.shares) || 0
     const price = Number.parseFloat(formData.pricePerShare) || 0
     const fees = Number.parseFloat(formData.fees) || 0
-    return shares * price + fees
+    // For buys: cost = price + fees (you pay more)
+    // For sells: proceeds = price - fees (you receive less)
+    return formData.type === "buy"
+      ? shares * price + fees
+      : shares * price - fees
   }
 
   return (
@@ -220,7 +224,7 @@ export function AddTransactionDialog({ trigger }: AddTransactionDialogProps) {
 
           <div className="rounded-lg bg-secondary p-4">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Total Transaction Cost</span>
+              <span className="text-muted-foreground">{formData.type === "buy" ? "Total Cost" : "Net Proceeds"}</span>
               <span className="text-xl font-bold text-foreground">
                 ${calculatedTotal().toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>

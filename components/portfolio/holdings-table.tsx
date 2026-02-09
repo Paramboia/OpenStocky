@@ -190,7 +190,7 @@ export function HoldingsTable() {
                       ${holding.currentPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right font-medium text-foreground">
-                      ${holding.currentValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${Math.round(holding.currentValue).toLocaleString("en-US")}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -201,7 +201,7 @@ export function HoldingsTable() {
                         )}
                         <span className={isPositive ? "text-primary" : "text-destructive"}>
                           {isPositive ? "+" : ""}
-                          {holding.gainLossPercent.toFixed(2)}%
+                          {holding.gainLossPercent.toFixed(1)}%
                         </span>
                       </div>
                     </TableCell>

@@ -30,24 +30,49 @@ export const transactions: Transaction[] = []
 // Current prices are intentionally empty; live prices should come from the in-memory store/API.
 export const currentPrices: Record<string, number> = {}
 
-// Calculate current holdings from transactions
-// livePrices parameter allows passing real-time prices from the stock price API
-export function calculateHoldings(
-  livePrices?: Record<string, number>,
-  transactionData: Transaction[] = transactions,
-): Holding[] {
-  const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
+// --- Internal types ---
+
+interface FifoLot {
+  shares: number
+  costPerShare: number
+}
+
+interface ClosedTrade {
+  symbol: string
+  realizedPnL: number
+}
+
+interface ProcessedTransactions {
+  holdingsMap: Map<string, { shares: number; totalCost: number }>
+  realizedMap: Map<string, number>
+  fifoLots: Map<string, FifoLot[]>
+  totalBuyCostMap: Map<string, number>
+  totalRealizedGains: number
+  closedTrades: ClosedTrade[]
+}
+
+// --- Internal FIFO processing (single source of truth) ---
+// Sorts transactions by date, validates against short selling, and
+// tracks closed trades for win rate.
+
+function _processTransactions(
+  transactionData: Transaction[],
+): ProcessedTransactions {
+  // Sort by date to ensure correct FIFO ordering
+  const sorted = [...transactionData].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  )
+
   const holdingsMap = new Map<string, { shares: number; totalCost: number }>()
-
-  // Track per-symbol realized gains using FIFO lots
   const realizedMap = new Map<string, number>()
-  const fifoLots = new Map<string, { shares: number; costPerShare: number }[]>()
-  // Track total capital invested per symbol (sum of all buys) for total return %
+  const fifoLots = new Map<string, FifoLot[]>()
   const totalBuyCostMap = new Map<string, number>()
+  let totalRealizedGains = 0
+  const closedTrades: ClosedTrade[] = []
 
-  for (const tx of transactionData) {
+  for (const tx of sorted) {
     const current = holdingsMap.get(tx.symbol) || { shares: 0, totalCost: 0 }
-    
+
     if (tx.type === "buy") {
       current.shares += tx.shares
       current.totalCost += tx.transactionCost
@@ -60,35 +85,69 @@ export function calculateHoldings(
       // Accumulate total buy cost
       totalBuyCostMap.set(tx.symbol, (totalBuyCostMap.get(tx.symbol) || 0) + tx.transactionCost)
     } else {
-      // For sells, reduce shares and proportionally reduce cost basis
+      // Validate: clamp sell shares to available shares (prevent short selling)
+      const availableShares = current.shares
+      const sellShares = Math.min(tx.shares, availableShares)
+
+      if (sellShares <= 0.0001) {
+        // Nothing to sell — skip this transaction
+        holdingsMap.set(tx.symbol, current)
+        continue
+      }
+
+      // Reduce shares and cost basis
       const avgCost = current.shares > 0 ? current.totalCost / current.shares : 0
-      current.shares -= tx.shares
+      current.shares -= sellShares
       current.totalCost = Math.max(0, current.shares * avgCost)
 
       // FIFO realized gain calculation
       const lots = fifoLots.get(tx.symbol) || []
-      let remaining = tx.shares
-      let realized = realizedMap.get(tx.symbol) || 0
+      let remaining = sellShares
+      let tradeRealized = 0
 
       while (remaining > 0.0001 && lots.length > 0) {
         const lot = lots[0]
         const consumed = Math.min(remaining, lot.shares)
-        realized += consumed * (tx.pricePerShare - lot.costPerShare)
+        tradeRealized += consumed * (tx.pricePerShare - lot.costPerShare)
         lot.shares -= consumed
         remaining -= consumed
         if (lot.shares < 0.0001) lots.shift()
       }
 
-      realized -= tx.fees
-      realizedMap.set(tx.symbol, realized)
+      tradeRealized -= tx.fees
+
+      // Per-symbol accumulated realized
+      const prevRealized = realizedMap.get(tx.symbol) || 0
+      realizedMap.set(tx.symbol, prevRealized + tradeRealized)
       fifoLots.set(tx.symbol, lots)
+
+      // Track as closed trade for win rate / profit factor
+      totalRealizedGains += tradeRealized
+      closedTrades.push({ symbol: tx.symbol, realizedPnL: tradeRealized })
     }
-    
+
     holdingsMap.set(tx.symbol, current)
   }
 
+  return {
+    holdingsMap,
+    realizedMap,
+    fifoLots,
+    totalBuyCostMap,
+    totalRealizedGains,
+    closedTrades,
+  }
+}
+
+// --- Build Holding[] from processed data ---
+
+function _buildHoldings(
+  processed: ProcessedTransactions,
+  prices: Record<string, number>,
+): Holding[] {
+  const { holdingsMap, realizedMap, fifoLots, totalBuyCostMap } = processed
   const holdings: Holding[] = []
-  
+
   holdingsMap.forEach((value, symbol) => {
     if (value.shares > 0.01) {
       const currentPrice = prices[symbol] || 0
@@ -125,6 +184,17 @@ export function calculateHoldings(
   })
 
   return holdings.sort((a, b) => b.currentValue - a.currentValue)
+}
+
+// Calculate current holdings from transactions
+// livePrices parameter allows passing real-time prices from the stock price API
+export function calculateHoldings(
+  livePrices?: Record<string, number>,
+  transactionData: Transaction[] = transactions,
+): Holding[] {
+  const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
+  const processed = _processTransactions(transactionData)
+  return _buildHoldings(processed, prices)
 }
 
 // Helper: Calculate IRR using Newton-Raphson method
@@ -165,54 +235,141 @@ function calculateIRR(cashFlows: { date: Date; amount: number }[], guess = 0.1):
   return rate * 100 // Return as percentage
 }
 
+// --- Monthly portfolio values for time-series volatility ---
+
+function _computeMonthlyValues(
+  sortedTx: Transaction[],
+  historicalPrices: Record<string, Record<string, number>>,
+  livePrices: Record<string, number>,
+): { month: string; value: number; netCashFlow: number }[] {
+  const holdings = new Map<string, { shares: number; totalCost: number }>()
+  const snapshots = new Map<string, {
+    holdings: Map<string, { shares: number; totalCost: number }>
+    netCashFlow: number
+  }>()
+  const monthlyCashFlows = new Map<string, number>()
+
+  for (const tx of sortedTx) {
+    const txDate = new Date(tx.date)
+    const monthKey = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, "0")}`
+
+    const current = holdings.get(tx.symbol) || { shares: 0, totalCost: 0 }
+    const prevCF = monthlyCashFlows.get(monthKey) || 0
+
+    if (tx.type === "buy") {
+      current.shares += tx.shares
+      current.totalCost += tx.transactionCost
+      monthlyCashFlows.set(monthKey, prevCF + tx.transactionCost)
+    } else {
+      const avgCost = current.shares > 0 ? current.totalCost / current.shares : 0
+      const sellShares = Math.min(tx.shares, current.shares)
+      current.shares -= sellShares
+      current.totalCost = Math.max(0, current.shares * avgCost)
+      monthlyCashFlows.set(monthKey, prevCF - tx.transactionCost)
+    }
+
+    holdings.set(tx.symbol, current)
+    snapshots.set(monthKey, {
+      holdings: new Map(Array.from(holdings, ([s, h]) => [s, { ...h }])),
+      netCashFlow: monthlyCashFlows.get(monthKey) || 0,
+    })
+  }
+
+  // Generate continuous month keys
+  const firstTxDate = new Date(sortedTx[0].date)
+  const firstMonth = `${firstTxDate.getFullYear()}-${String(firstTxDate.getMonth() + 1).padStart(2, "0")}`
+  const now = new Date()
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+
+  const allMonths: string[] = []
+  {
+    let [y, m] = firstMonth.split("-").map(Number)
+    const [ey, em] = currentMonthKey.split("-").map(Number)
+    while (y < ey || (y === ey && m <= em)) {
+      allMonths.push(`${y}-${String(m).padStart(2, "0")}`)
+      m++
+      if (m > 12) { m = 1; y++ }
+      if (allMonths.length > 1200) break
+    }
+  }
+
+  // Fill gaps and value each month
+  type HoldingsState = Map<string, { shares: number; totalCost: number }>
+  const result: { month: string; value: number; netCashFlow: number }[] = []
+  let lastHoldings: HoldingsState | null = null
+
+  for (const mk of allMonths) {
+    const snap = snapshots.get(mk)
+    const currentHoldings: HoldingsState | null = snap ? snap.holdings : lastHoldings
+    const netCashFlow = snap ? snap.netCashFlow : 0
+
+    if (!currentHoldings) continue
+    lastHoldings = new Map(Array.from(currentHoldings, ([s, h]) => [s, { ...h }]))
+
+    let value = 0
+    currentHoldings.forEach((h, symbol) => {
+      if (h.shares <= 0) return
+      let price: number | undefined
+
+      // Current month: prefer live prices
+      if (mk === currentMonthKey && livePrices[symbol] != null) {
+        price = livePrices[symbol]
+      }
+
+      // Historical price for this month
+      if (price === undefined) {
+        price = historicalPrices[symbol]?.[mk]
+      }
+
+      // Carry forward: most recent price before this month
+      if (price === undefined) {
+        const symbolPrices = historicalPrices[symbol]
+        if (symbolPrices) {
+          const months = Object.keys(symbolPrices).sort()
+          for (let i = months.length - 1; i >= 0; i--) {
+            if (months[i] <= mk) { price = symbolPrices[months[i]]; break }
+          }
+        }
+      }
+
+      // Fallback: cost basis
+      if (price === undefined) {
+        price = h.shares > 0 ? h.totalCost / h.shares : 0
+      }
+
+      value += h.shares * price
+    })
+
+    result.push({ month: mk, value, netCashFlow })
+  }
+
+  return result
+}
+
 // Calculate total portfolio stats
 // livePrices parameter allows passing real-time prices from the stock price API
 export function calculatePortfolioStats(
   livePrices?: Record<string, number>,
   transactionData: Transaction[] = transactions,
+  options?: {
+    historicalPrices?: Record<string, Record<string, number>>
+    stockBetas?: Record<string, number>
+  },
 ) {
-  const holdings = calculateHoldings(livePrices, transactionData)
   const prices = livePrices && Object.keys(livePrices).length > 0 ? livePrices : currentPrices
-  
+
+  // Single FIFO pass — no duplicate computation
+  const processed = _processTransactions(transactionData)
+  const { totalRealizedGains, closedTrades } = processed
+  const holdings = _buildHoldings(processed, prices)
+
   const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0)
   const totalCost = holdings.reduce((sum, h) => sum + h.totalCost, 0)
   const totalGainLoss = totalValue - totalCost
   const totalGainLossPercent = totalCost > 0 ? (totalGainLoss / totalCost) * 100 : 0
 
-  // Calculate realized gains from all sell transactions using FIFO lot-based queue
-  // Supports fractional shares correctly
-  let realizedGains = 0
-  const costBasisLots = new Map<string, { shares: number; costPerShare: number }[]>()
-
-  for (const tx of transactionData) {
-    if (tx.type === "buy") {
-      const lots = costBasisLots.get(tx.symbol) || []
-      lots.push({
-        shares: tx.shares,
-        costPerShare: tx.pricePerShare + tx.fees / tx.shares,
-      })
-      costBasisLots.set(tx.symbol, lots)
-    } else if (tx.type === "sell") {
-      const lots = costBasisLots.get(tx.symbol) || []
-      let remaining = tx.shares
-
-      while (remaining > 0.0001 && lots.length > 0) {
-        const lot = lots[0]
-        const consumed = Math.min(remaining, lot.shares)
-
-        realizedGains += consumed * (tx.pricePerShare - lot.costPerShare)
-        lot.shares -= consumed
-        remaining -= consumed
-
-        if (lot.shares < 0.0001) {
-          lots.shift() // lot fully consumed
-        }
-      }
-
-      realizedGains -= tx.fees
-      costBasisLots.set(tx.symbol, lots)
-    }
-  }
+  // Realized gains from the single FIFO pass (no duplicate!)
+  const realizedGains = totalRealizedGains
 
   // Best and worst performers
   const sortedByGain = [...holdings].sort((a, b) => b.gainLossPercent - a.gainLossPercent)
@@ -230,9 +387,14 @@ export function calculatePortfolioStats(
   // Total return (unrealized + realized)
   const totalReturn = totalGainLoss + realizedGains
 
-  // Winners vs Losers count
-  const winners = holdings.filter(h => h.gainLoss >= 0).length
-  const losers = holdings.filter(h => h.gainLoss < 0).length
+  // Winners vs Losers (includes BOTH open positions AND closed trades)
+  const openWinners = holdings.filter(h => h.gainLoss >= 0).length
+  const openLosers = holdings.filter(h => h.gainLoss < 0).length
+  const closedWinners = closedTrades.filter(t => t.realizedPnL >= 0).length
+  const closedLosers = closedTrades.filter(t => t.realizedPnL < 0).length
+  const winners = openWinners + closedWinners
+  const losers = openLosers + closedLosers
+  const totalPositions = winners + losers
 
   // Total fees paid
   const totalFees = transactionData.reduce((sum, tx) => sum + tx.fees, 0)
@@ -259,13 +421,10 @@ export function calculatePortfolioStats(
   const netInvested = totalInvested - totalWithdrawn
   
   // CAGR based on portfolio value vs net invested (actual capital at risk)
-  // netInvested = buys - sell proceeds; represents real cash deployed
   let cagr = 0
   if (netInvested > 0 && totalValue > 0) {
     cagr = (Math.pow(totalValue / netInvested, 1 / yearsInvested) - 1) * 100
   } else if (netInvested <= 0 && totalValue > 0) {
-    // User has already withdrawn more than invested — portfolio is "free money"
-    // CAGR is not meaningful here; fall back to IRR later
     cagr = Infinity
   }
   
@@ -279,27 +438,30 @@ export function calculatePortfolioStats(
   
   const irr = calculateIRR(cashFlows)
   
-  // 3. Win Rate
-  const winRate = holdings.length > 0 ? (winners / holdings.length) * 100 : 0
+  // 3. Win Rate (includes open AND closed positions)
+  const winRate = totalPositions > 0 ? (winners / totalPositions) * 100 : 0
   
-  // 4. Profit Factor (gross profits / gross losses)
-  const grossProfits = holdings.filter(h => h.gainLoss > 0).reduce((sum, h) => sum + h.gainLoss, 0)
-  const grossLosses = Math.abs(holdings.filter(h => h.gainLoss < 0).reduce((sum, h) => sum + h.gainLoss, 0))
+  // 4. Profit Factor (includes open AND closed positions)
+  const openGrossProfits = holdings.filter(h => h.gainLoss > 0).reduce((sum, h) => sum + h.gainLoss, 0)
+  const openGrossLosses = Math.abs(holdings.filter(h => h.gainLoss < 0).reduce((sum, h) => sum + h.gainLoss, 0))
+  const closedGrossProfits = closedTrades.filter(t => t.realizedPnL > 0).reduce((sum, t) => sum + t.realizedPnL, 0)
+  const closedGrossLosses = Math.abs(closedTrades.filter(t => t.realizedPnL < 0).reduce((sum, t) => sum + t.realizedPnL, 0))
+  const grossProfits = openGrossProfits + closedGrossProfits
+  const grossLosses = openGrossLosses + closedGrossLosses
   const profitFactor = grossLosses > 0 ? grossProfits / grossLosses : grossProfits > 0 ? Infinity : 0
   
-  // 5. Average Win vs Average Loss
-  const avgWin = winners > 0 
-    ? holdings.filter(h => h.gainLoss > 0).reduce((sum, h) => sum + h.gainLoss, 0) / winners 
+  // 5. Average Win vs Average Loss (includes open AND closed)
+  const avgWin = winners > 0
+    ? (openGrossProfits + closedGrossProfits) / winners
     : 0
-  const avgLoss = losers > 0 
-    ? Math.abs(holdings.filter(h => h.gainLoss < 0).reduce((sum, h) => sum + h.gainLoss, 0) / losers)
+  const avgLoss = losers > 0
+    ? (openGrossLosses + closedGrossLosses) / losers
     : 0
   
   // 6. Risk/Reward Ratio
   const riskRewardRatio = avgLoss > 0 ? avgWin / avgLoss : avgWin > 0 ? Infinity : 0
   
   // 7. Portfolio Concentration (Herfindahl-Hirschman Index)
-  // HHI ranges from 0 to 10000, higher = more concentrated
   const hhi = totalValue > 0 
     ? holdings.reduce((sum, h) => {
         const weight = (h.currentValue / totalValue) * 100
@@ -311,46 +473,71 @@ export function calculatePortfolioStats(
   const top5Value = holdings.slice(0, 5).reduce((sum, h) => sum + h.currentValue, 0)
   const top5Concentration = totalValue > 0 ? (top5Value / totalValue) * 100 : 0
   
-  // 9. Portfolio Beta estimate (simplified - based on tech-heavy holdings)
-  // This is a rough estimate; real beta would require historical price data
-  const techSymbols = ["AAPL", "MSFT", "NVDA", "GOOGL", "META", "AMZN", "COIN", "SNOW", "CRWD", "GTLB", "RKLB"]
-  const techValue = holdings
-    .filter(h => techSymbols.includes(h.symbol))
-    .reduce((sum, h) => sum + h.currentValue, 0)
-  const techWeight = totalValue > 0 ? techValue / totalValue : 0
-  const estimatedBeta = 1 + (techWeight * 0.5) // Tech adds volatility
+  // 9. Portfolio Beta (value-weighted average of per-stock betas from Yahoo Finance)
+  // For holdings without beta data, assumes market beta (1.0)
+  let estimatedBeta = 0
+  if (options?.stockBetas && totalValue > 0) {
+    for (const h of holdings) {
+      const weight = h.currentValue / totalValue
+      const beta = options.stockBetas[h.symbol]
+      if (typeof beta === "number" && Number.isFinite(beta)) {
+        estimatedBeta += beta * weight
+      } else {
+        // Default to market beta for unknown stocks
+        estimatedBeta += 1.0 * weight
+      }
+    }
+  }
   
-  // 10. Dividend Yield estimate (for dividend-paying stocks we had)
-  const dividendStocks = ["VZ", "PFE", "JNJ", "XOM", "CVX", "MO", "LTC"]
-  const dividendValue = holdings
-    .filter(h => dividendStocks.includes(h.symbol))
-    .reduce((sum, h) => sum + h.currentValue, 0)
-  const dividendYieldEstimate = totalValue > 0 ? (dividendValue / totalValue) * 3.5 : 0 // Rough 3.5% yield for div stocks
-  
-  // 11. Total Capital Deployed (lifetime)
+  // 10. Total Capital Deployed (lifetime)
   const totalCapitalDeployed = totalInvested
   
-  // 12. Capital Efficiency (current value / total capital ever deployed)
+  // 11. Capital Efficiency (current value / total capital ever deployed)
   const capitalEfficiency = totalCapitalDeployed > 0 ? (totalValue / totalCapitalDeployed) * 100 : 0
   const totalReturnPercent = totalCapitalDeployed > 0 ? (totalReturn / totalCapitalDeployed) * 100 : 0
   
-  // 13. Time in Market (days)
+  // 12. Time in Market (days)
   const daysInMarket = Math.floor((today.getTime() - firstTxDate.getTime()) / (24 * 60 * 60 * 1000))
   
-  // 14. Average Position Size
+  // 13. Average Position Size
   const avgPositionSize = holdings.length > 0 ? totalValue / holdings.length : 0
   
-  // 15. Volatility of returns (standard deviation of position returns)
-  const returns = holdings.map(h => h.gainLossPercent)
-  const meanReturn = returns.length > 0 ? returns.reduce((a, b) => a + b, 0) / returns.length : 0
-  const variance = returns.length > 1 
-    ? returns.reduce((sum, r) => sum + Math.pow(r - meanReturn, 2), 0) / (returns.length - 1)
-    : 0
-  const volatility = Math.sqrt(variance)
-  
-  // 16. Sharpe-like Ratio (using 5% as risk-free rate proxy)
-  const riskFreeRate = 5
-  const sharpeRatio = volatility > 0 ? (avgGainLossPercent - riskFreeRate) / volatility : 0
+  // 14. Portfolio Volatility (time-series, from monthly returns)
+  // Uses Modified Dietz method to compute monthly returns, then annualizes.
+  // Requires historicalPrices to be provided; otherwise falls back to 0.
+  let volatility = 0
+  let sharpeRatio = 0
+
+  if (options?.historicalPrices && Object.keys(options.historicalPrices).length > 0 && sortedTx.length > 0) {
+    const monthlyValues = _computeMonthlyValues(sortedTx, options.historicalPrices, prices)
+
+    if (monthlyValues.length >= 3) {
+      // Compute monthly returns using Modified Dietz method
+      const monthlyReturns: number[] = []
+      for (let i = 1; i < monthlyValues.length; i++) {
+        const prev = monthlyValues[i - 1]
+        const curr = monthlyValues[i]
+        // Modified Dietz: (V_end - V_start - CF) / (V_start + 0.5 * CF)
+        const denom = prev.value + curr.netCashFlow * 0.5
+        if (denom > 0) {
+          const ret = (curr.value - prev.value - curr.netCashFlow) / denom
+          monthlyReturns.push(ret * 100) // as percentage
+        }
+      }
+
+      if (monthlyReturns.length >= 2) {
+        const meanReturn = monthlyReturns.reduce((a, b) => a + b, 0) / monthlyReturns.length
+        const variance = monthlyReturns.reduce((sum, r) => sum + (r - meanReturn) ** 2, 0) / (monthlyReturns.length - 1)
+        const monthlyVol = Math.sqrt(variance)
+        volatility = monthlyVol * Math.sqrt(12) // Annualize
+
+        // 15. Sharpe Ratio: (annualized return - risk-free) / annualized volatility
+        // Uses IRR as the annualized return (money-weighted, already annualized)
+        const riskFreeRate = 5 // 5% annual risk-free rate proxy
+        sharpeRatio = volatility > 0 ? (irr - riskFreeRate) / volatility : 0
+      }
+    }
+  }
 
   return {
     totalValue,
@@ -380,7 +567,6 @@ export function calculatePortfolioStats(
     hhi,
     top5Concentration,
     estimatedBeta,
-    dividendYieldEstimate,
     totalCapitalDeployed,
     capitalEfficiency,
     daysInMarket,

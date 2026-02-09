@@ -1,13 +1,15 @@
 "use client"
 
-import React from "react"
+import React, { useState, useEffect, useMemo } from "react"
 
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Activity, DollarSign, PiggyBank, Target, Trophy, AlertTriangle, PieChart, Percent, BarChart3, Clock, Scale, Zap, Shield } from "lucide-react"
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Activity, DollarSign, PiggyBank, Target, Trophy, PieChart, Percent, BarChart3, Scale, Zap, Shield } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { calculatePortfolioStats, calculateHoldings } from "@/lib/portfolio-data"
+import { calculatePortfolioStats } from "@/lib/portfolio-data"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useTransactions } from "@/lib/transactions-store"
+
+type HistoricalPrices = Record<string, Record<string, number>>
 
 function KpiTooltip({ children, content }: { children: React.ReactNode; content: string }) {
   return (
@@ -23,10 +25,37 @@ function KpiTooltip({ children, content }: { children: React.ReactNode; content:
 }
 
 export function PortfolioHeader() {
-  const { prices } = useStockPrices()
+  const { prices, betas } = useStockPrices()
   const transactions = useTransactions()
-  const stats = calculatePortfolioStats(prices, transactions)
-  const holdings = calculateHoldings(prices, transactions)
+  const [historicalPrices, setHistoricalPrices] = useState<HistoricalPrices>({})
+
+  // Fetch historical prices for volatility/Sharpe computation
+  const allSymbols = useMemo(() => {
+    const set = new Set<string>()
+    for (const tx of transactions) set.add(tx.symbol)
+    return Array.from(set)
+  }, [transactions])
+
+  const symbolsKey = allSymbols.join(",")
+
+  useEffect(() => {
+    if (!symbolsKey) return
+    let cancelled = false
+
+    fetch(`/api/stock-prices/historical?symbols=${symbolsKey}&months=25`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data.prices) setHistoricalPrices(data.prices)
+      })
+      .catch((err) => console.error("Failed to fetch historical prices for stats:", err))
+
+    return () => { cancelled = true }
+  }, [symbolsKey])
+
+  const stats = calculatePortfolioStats(prices, transactions, {
+    historicalPrices,
+    stockBetas: betas,
+  })
 
   const isPositive = stats.totalGainLoss >= 0
   const isRealizedPositive = stats.realizedGains >= 0
@@ -34,6 +63,7 @@ export function PortfolioHeader() {
   const isIrrPositive = stats.irr >= 0
   const isCagrPositive = stats.cagr >= 0
   const isSharpeGood = stats.sharpeRatio > 0
+  const isBestPositive = stats.bestPerformer ? stats.bestPerformer.gainLossPercent >= 0 : true
 
   return (
     <div className="space-y-6">
@@ -48,10 +78,10 @@ export function PortfolioHeader() {
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Portfolio Value</p>
                 <p className="text-2xl font-bold text-foreground">
-                  ${stats.totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(stats.totalValue).toLocaleString("en-US")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Net invested: ${stats.netInvested.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                  Net invested: ${Math.round(stats.netInvested).toLocaleString("en-US")}
                 </p>
               </div>
             </div>
@@ -139,7 +169,7 @@ export function PortfolioHeader() {
               </div>
             </KpiTooltip>
 
-            <KpiTooltip content="Compound Annual Growth Rate based on net invested capital (total buys minus total sell proceeds) vs current portfolio value. May differ from simple beginning/ending value CAGR formulas">
+            <KpiTooltip content="Compound Annual Growth Rate based on net invested capital vs current portfolio value">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" /> CAGR
@@ -151,7 +181,7 @@ export function PortfolioHeader() {
               </div>
             </KpiTooltip>
 
-            <KpiTooltip content="Risk-adjusted return relative to volatility. Higher is better. Above 1 is good, above 2 is excellent">
+            <KpiTooltip content="Risk-adjusted return: (annualized IRR - risk-free rate) / annualized portfolio volatility. Higher is better. Above 1 is good, above 2 is excellent">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Scale className="h-3 w-3" /> Sharpe
@@ -163,7 +193,7 @@ export function PortfolioHeader() {
               </div>
             </KpiTooltip>
 
-            <KpiTooltip content="Standard deviation of position returns - Higher means more volatile portfolio">
+            <KpiTooltip content="Annualized standard deviation of monthly portfolio returns (Modified Dietz method). Higher means more volatile portfolio">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <BarChart3 className="h-3 w-3" /> Volatility
@@ -171,11 +201,11 @@ export function PortfolioHeader() {
                 <p className="text-xl font-bold text-foreground">
                   {stats.volatility.toFixed(1)}%
                 </p>
-                <p className="text-xs text-muted-foreground">std dev</p>
+                <p className="text-xs text-muted-foreground">annualized</p>
               </div>
             </KpiTooltip>
 
-            <KpiTooltip content="Percentage of positions currently in profit">
+            <KpiTooltip content="Percentage of all positions (open and closed) that are profitable">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Trophy className="h-3 w-3" /> Win Rate
@@ -187,7 +217,7 @@ export function PortfolioHeader() {
               </div>
             </KpiTooltip>
 
-            <KpiTooltip content="Ratio of gross profits to gross losses. Above 1 means profits exceed losses">
+            <KpiTooltip content="Ratio of gross profits to gross losses across open and closed positions. Above 1 means profits exceed losses">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Zap className="h-3 w-3" /> Profit Factor
@@ -211,13 +241,13 @@ export function PortfolioHeader() {
               </div>
             </KpiTooltip>
 
-            <KpiTooltip content="Estimated portfolio beta based on sector allocation. Higher means more volatile relative to market">
+            <KpiTooltip content="Value-weighted portfolio beta from Yahoo Finance data. Measures sensitivity to market movements. 1.0 = market average">
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Shield className="h-3 w-3" /> Beta (est.)
+                  <Shield className="h-3 w-3" /> Beta
                 </p>
                 <p className="text-xl font-bold text-foreground">
-                  {stats.estimatedBeta.toFixed(2)}
+                  {stats.estimatedBeta > 0 ? stats.estimatedBeta.toFixed(2) : "-"}
                 </p>
                 <p className="text-xs text-muted-foreground">vs market</p>
               </div>
@@ -238,7 +268,7 @@ export function PortfolioHeader() {
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Activity className="h-3 w-3" /> Positions
                 </p>
-                <p className="text-xl font-bold text-foreground">{holdings.length}</p>
+                <p className="text-xl font-bold text-foreground">{stats.holdingsCount}</p>
                 <p className="text-xs text-muted-foreground">active</p>
               </div>
             </KpiTooltip>
@@ -285,7 +315,7 @@ export function PortfolioHeader() {
                   <DollarSign className="h-3 w-3" /> Total Fees
                 </p>
                 <p className="text-xl font-bold text-foreground">
-                  ${stats.totalFees.toLocaleString()}
+                  ${Math.round(stats.totalFees).toLocaleString("en-US")}
                 </p>
                 <p className="text-xs text-muted-foreground">all time</p>
               </div>
@@ -320,11 +350,11 @@ export function PortfolioHeader() {
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Trophy className="h-3 w-3" /> Best
                 </p>
-                <p className="text-xl font-bold text-primary">
+                <p className={`text-xl font-bold ${isBestPositive ? "text-primary" : "text-destructive"}`}>
                   {stats.bestPerformer?.symbol || "-"}
                 </p>
-                <p className="text-xs text-primary">
-                  {stats.bestPerformer ? `+${stats.bestPerformer.gainLossPercent.toFixed(0)}%` : "-"}
+                <p className={`text-xs ${isBestPositive ? "text-primary" : "text-destructive"}`}>
+                  {stats.bestPerformer ? `${isBestPositive ? "+" : ""}${stats.bestPerformer.gainLossPercent.toFixed(1)}%` : "-"}
                 </p>
               </div>
             </KpiTooltip>

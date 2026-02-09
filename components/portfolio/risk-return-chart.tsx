@@ -67,17 +67,17 @@ export function RiskReturnChart() {
           </p>
           <p className={`text-sm ${isPositive ? "text-primary" : "text-destructive"}`}>
             Total Return: {isPositive ? "+" : ""}$
-            {d.totalReturn.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+            {Math.round(d.totalReturn).toLocaleString("en-US")}
             {" "}({isPositive ? "+" : ""}{d.returnPct.toFixed(1)}%)
           </p>
           <p className="text-muted-foreground text-sm">
             Value: $
-            {d.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+            {Math.round(d.value).toLocaleString("en-US")}
           </p>
           {d.realized !== 0 && (
             <div className="mt-1.5 border-t border-border pt-1.5 text-xs text-muted-foreground">
-              <p>Unrealized: {d.unrealized >= 0 ? "+" : ""}${d.unrealized.toLocaleString("en-US", { maximumFractionDigits: 0 })}</p>
-              <p>Realized: {d.realized >= 0 ? "+" : ""}${d.realized.toLocaleString("en-US", { maximumFractionDigits: 0 })}</p>
+              <p>Unrealized: {d.unrealized >= 0 ? "+" : ""}${Math.round(d.unrealized).toLocaleString("en-US")}</p>
+              <p>Realized: {d.realized >= 0 ? "+" : ""}${Math.round(d.realized).toLocaleString("en-US")}</p>
             </div>
           )}
         </div>
@@ -88,14 +88,14 @@ export function RiskReturnChart() {
 
   const chartTitle = (
     <CardTitle className="flex items-center gap-2 text-foreground">
-      Risk vs Return
+      Weight vs Return
       <TooltipProvider delayDuration={100}>
         <UiTooltip>
           <TooltipTrigger asChild>
             <Info className="h-4 w-4 text-muted-foreground cursor-help" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
-            <p className="text-sm">Scatter plot of each position: x-axis is portfolio weight (concentration risk), y-axis is total return % (unrealized + realized). Bubble size reflects position value. Positions in the top-right are large and profitable; bottom-right are large losers that may need attention.</p>
+            <p className="text-sm">Scatter plot of each position: x-axis is portfolio weight (allocation), y-axis is total return % (unrealized + realized). Bubble size reflects position value. Positions in the top-right are large and profitable; bottom-right are large losers that may need attention.</p>
           </TooltipContent>
         </UiTooltip>
       </TooltipProvider>
@@ -108,7 +108,7 @@ export function RiskReturnChart() {
         <CardHeader>{chartTitle}</CardHeader>
         <CardContent>
           <div className="flex h-80 items-center justify-center text-muted-foreground">
-            Add transactions to see risk vs return analysis
+            Add transactions to see weight vs return analysis
           </div>
         </CardContent>
       </Card>

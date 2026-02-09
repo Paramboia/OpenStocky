@@ -55,19 +55,16 @@ export function PlAttributionChart() {
           <p className="font-semibold text-foreground">{d.symbol}</p>
           <p className={isPositive ? "text-primary" : "text-destructive"}>
             {isPositive ? "+" : ""}$
-            {d.totalReturn.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {Math.round(d.totalReturn).toLocaleString("en-US")}
           </p>
           <p className="text-muted-foreground text-sm">
             {isPositive ? "+" : ""}
-            {d.totalReturnPercent.toFixed(2)}%
+            {d.totalReturnPercent.toFixed(1)}%
           </p>
           {d.realized !== 0 && (
             <div className="mt-1.5 border-t border-border pt-1.5 text-xs text-muted-foreground">
-              <p>Unrealized: {d.unrealized >= 0 ? "+" : ""}${d.unrealized.toLocaleString("en-US", { maximumFractionDigits: 0 })}</p>
-              <p>Realized: {d.realized >= 0 ? "+" : ""}${d.realized.toLocaleString("en-US", { maximumFractionDigits: 0 })}</p>
+              <p>Unrealized: {d.unrealized >= 0 ? "+" : ""}${Math.round(d.unrealized).toLocaleString("en-US")}</p>
+              <p>Realized: {d.realized >= 0 ? "+" : ""}${Math.round(d.realized).toLocaleString("en-US")}</p>
             </div>
           )}
         </div>
