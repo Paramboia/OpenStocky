@@ -7,6 +7,7 @@ import { AllocationChart } from "@/components/portfolio/allocation-chart"
 import { PerformanceChart } from "@/components/portfolio/performance-chart"
 import { PlAttributionChart } from "@/components/portfolio/pl-attribution-chart"
 import { RiskReturnChart } from "@/components/portfolio/risk-return-chart"
+import { MarketPerformanceTable } from "@/components/portfolio/market-performance-table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function PortfolioContent() {
@@ -40,12 +41,21 @@ export function PortfolioContent() {
               >
                 Transactions
               </TabsTrigger>
+              <TabsTrigger 
+                value="market" 
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
+              >
+                Market
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="holdings" className="mt-6">
               <HoldingsTable />
             </TabsContent>
             <TabsContent value="transactions" className="mt-6">
               <TransactionsTable />
+            </TabsContent>
+            <TabsContent value="market" className="mt-6">
+              <MarketPerformanceTable />
             </TabsContent>
           </Tabs>
         </div>
