@@ -6,17 +6,22 @@ const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] })
 const MAX_SYMBOLS = 100
 const CACHE_SECONDS = 300 // 5 minutes — data changes slowly intraday
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type YFRow = any
+interface ChartQuote {
+  date: Date | string
+  close?: number | null
+  adjclose?: number | null
+  // chart() uses lowercase "adjclose", historical() uses "adjClose"
+  adjClose?: number | null
+}
 
 /**
  * Find the closing price closest to N calendar days ago.
  * Allows up to 5 days of tolerance for weekends / holidays.
  */
-function findPriceNDaysAgo(rows: YFRow[], nDays: number): number | null {
+function findPriceNDaysAgo(rows: ChartQuote[], nDays: number): number | null {
   const target = Date.now() - nDays * 86_400_000
 
-  let best: YFRow | null = null
+  let best: ChartQuote | null = null
   let bestDiff = Infinity
 
   for (const row of rows) {
@@ -30,7 +35,9 @@ function findPriceNDaysAgo(rows: YFRow[], nDays: number): number | null {
   }
 
   if (best && bestDiff <= 5 * 86_400_000) {
-    const price = best.adjClose != null && best.adjClose > 0 ? best.adjClose : best.close
+    // chart() returns "adjclose" (lowercase), historical() returns "adjClose" (camelCase)
+    const adj = best.adjclose ?? best.adjClose
+    const price = adj != null && adj > 0 ? adj : best.close
     return typeof price === "number" && Number.isFinite(price) ? price : null
   }
   return null
@@ -68,34 +75,54 @@ export async function GET(request: Request) {
       if (q?.symbol) quoteMap[q.symbol.toUpperCase()] = q
     }
 
-    // ---------- 2. Daily historical for the last ~35 calendar days ----------
+    // ---------- 2. Daily data for the last ~45 calendar days ----------
+    // Use chart() API (v8 endpoint) — more reliable than historical() for daily data
+    // in yahoo-finance2 v3. Falls back to historical() if chart() is unavailable.
     const startDate = new Date()
-    startDate.setDate(startDate.getDate() - 35)
+    startDate.setDate(startDate.getDate() - 45)
 
-    const histResults = await Promise.allSettled(
+    const chartResults = await Promise.allSettled(
       symbolList.map(async (sym) => {
-        const rows = await yahooFinance.historical(sym, {
-          period1: startDate,
-          interval: "1d",
-        })
-        return { sym, rows }
+        try {
+          // Preferred: chart() — uses Yahoo v8 API, returns { quotes: [...] }
+          const result = await yahooFinance.chart(sym, {
+            period1: startDate,
+            interval: "1d",
+          })
+          return { sym, rows: (result.quotes ?? []) as ChartQuote[] }
+        } catch {
+          // Fallback: historical() with validation disabled
+          try {
+            const rows = await yahooFinance.historical(
+              sym,
+              { period1: startDate, interval: "1d" },
+              { validateResult: false },
+            )
+            return { sym, rows: (rows ?? []) as ChartQuote[] }
+          } catch (err2) {
+            console.error(`[performance] Failed to fetch daily data for ${sym}:`, err2)
+            return { sym, rows: [] as ChartQuote[] }
+          }
+        }
       }),
     )
 
-    const histMap: Record<string, YFRow[]> = {}
-    for (const r of histResults) {
-      if (r.status === "fulfilled") histMap[r.value.sym] = r.value.rows
+    const chartMap: Record<string, ChartQuote[]> = {}
+    for (const r of chartResults) {
+      if (r.status === "fulfilled") {
+        chartMap[r.value.sym] = r.value.rows
+      }
     }
 
     // ---------- 3. Combine into per-symbol performance entries ----------
     for (const sym of symbolList) {
       const q = quoteMap[sym]
-      const hist = histMap[sym] ?? []
+      const dailyRows = chartMap[sym] ?? []
       if (!q?.regularMarketPrice) continue
 
       const price: number = q.regularMarketPrice
-      const price7D = findPriceNDaysAgo(hist, 7)
-      const price1M = findPriceNDaysAgo(hist, 21)
+      const price7D = findPriceNDaysAgo(dailyRows, 7)
+      const price1M = findPriceNDaysAgo(dailyRows, 21)
 
       // 52-week position (0-100)
       let fiftyTwoWeekPosition: number | null = null
