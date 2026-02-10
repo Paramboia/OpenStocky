@@ -59,7 +59,14 @@ export function HoldingsTable() {
     <Card className="bg-card border-border">
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-foreground">Holdings</CardTitle>
+          <div className="flex flex-col gap-1">
+            <CardTitle className="text-foreground">Holdings</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {holdings.length > 0
+                ? `${holdings.length} position${holdings.length !== 1 ? "s" : ""} • $${Math.round(totalValue).toLocaleString("en-US")} total value`
+                : "Current positions derived from your transactions"}
+            </p>
+          </div>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input

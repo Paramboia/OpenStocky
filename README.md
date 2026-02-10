@@ -48,9 +48,10 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 
 ### Dashboard UI
 
-- **Holdings table** — Sortable columns (symbol, shares, avg cost, price, value, unrealized P/L, total return, allocation), search with clear button
-- **Transactions table** — Paginated list, search by symbol, filter by buy/sell, swipe-to-delete on mobile
-- **Market Performance table** — Recent price performance for every held stock: 1-day, 7-day, and 1-month price changes (absolute + %), trailing P/E, 52-week range position (visual bar), market cap, and dividend yield. All columns sortable.
+- **Holdings table** — Current positions with sortable columns (symbol, shares, avg cost, price, value, unrealized P/L, total return, allocation). Subtext shows position count and total value.
+- **Market Performance table** — Price performance and fundamentals for every holding (1D/7D/1M, P/E, 52W range, market cap, dividend yield). Subtext shows number of holdings.
+- **History table** — Every symbol you have traded: closed (all shares sold), partial (some sold), and open (no sells yet). Realized P/L, avg buy/sell, duration, and status filter. Subtext summarizes realized P/L and position counts.
+- **Transactions table** — Paginated list, search by symbol, filter by buy/sell, swipe-to-delete on mobile. Subtext shows transaction count.
 - **Portfolio Growth chart** — Area chart of net invested vs portfolio value over the last 24 months, using actual monthly closing prices from Yahoo Finance
 - **Allocation chart** — Donut chart of portfolio weights (top 10 holdings + "Other")
 - **P/L Attribution chart** — Horizontal bar chart of each position's total return (unrealized + realized), sorted best to worst

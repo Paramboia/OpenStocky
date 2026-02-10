@@ -66,6 +66,7 @@ export default function AboutUsPage() {
           <li>Live stock prices via Yahoo Finance — no API key needed</li>
           <li>IRR, CAGR, Sharpe ratio, volatility, win rate, and more</li>
           <li>Total return per symbol (unrealized + realized via FIFO)</li>
+          <li>Four tabs: Holdings, Market (performance per holding), History (closed / partial / open positions), Transactions</li>
           <li>Four interactive charts: growth, allocation, P/L attribution, weight vs return</li>
           <li>Open source — audit and fork the code</li>
         </ul>

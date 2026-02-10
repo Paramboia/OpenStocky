@@ -592,20 +592,20 @@ export function getRecentTransactions(limit = 10): Transaction[] {
 
 export interface ClosedPosition {
   symbol: string
-  status: "closed" | "partial"
+  status: "closed" | "partial" | "open"
   totalSharesBought: number
   totalSharesSold: number
   remainingShares: number
   totalCost: number          // total $ spent on buys
-  totalProceeds: number      // total $ received from sells (before fees)
+  totalProceeds: number      // total $ received from sells (after fees); 0 for open
   totalFees: number          // buy + sell fees
-  realizedPnL: number        // FIFO-based realized gain/loss
+  realizedPnL: number        // FIFO-based realized gain/loss; 0 for open
   realizedReturnPercent: number
   avgBuyPrice: number
-  avgSellPrice: number
+  avgSellPrice: number       // 0 for open (no sells yet)
   firstBuyDate: string
-  lastSellDate: string
-  holdingPeriodDays: number
+  lastSellDate: string       // empty for open
+  holdingPeriodDays: number  // first buy to last sell, or to "now" for open
   trades: number             // total number of buy + sell transactions
 }
 
@@ -666,30 +666,30 @@ export function calculateClosedPositions(
   const processed = _processTransactions(sorted)
 
   const positions: ClosedPosition[] = []
+  const today = new Date()
 
   symbolStats.forEach((s, symbol) => {
-    // Only include symbols that have at least one sell
-    if (s.totalSharesSold <= 0.0001) return
-
     const remainingShares = Math.max(0, s.totalSharesBought - s.totalSharesSold)
-    const status: "closed" | "partial" = remainingShares < 0.01 ? "closed" : "partial"
+    const hasSells = s.totalSharesSold > 0.0001
+    const status: "closed" | "partial" | "open" = !hasSells
+      ? "open"
+      : remainingShares < 0.01
+        ? "closed"
+        : "partial"
 
     const realizedPnL = processed.realizedMap.get(symbol) || 0
 
-    // Cost of shares sold (FIFO gives us realized P/L, but for return % we
-    // need the cost base of what was sold). For FIFO:
-    //   realizedPnL = proceeds − costOfSold − sellFees
-    //   costOfSold  = proceeds − sellFees − realizedPnL
-    const costOfSold = s.totalSellProceeds - s.totalSellFees - realizedPnL
+    // Cost of shares sold (FIFO). For open positions: 0.
+    const costOfSold = hasSells ? s.totalSellProceeds - s.totalSellFees - realizedPnL : 0
     const realizedReturnPercent = costOfSold > 0 ? (realizedPnL / costOfSold) * 100 : 0
 
     const totalFees = s.totalBuyFees + s.totalSellFees
 
     const firstBuy = new Date(s.firstBuyDate)
-    const lastSell = new Date(s.lastSellDate)
+    const endDate = hasSells ? new Date(s.lastSellDate) : today
     const holdingPeriodDays = Math.max(
       0,
-      Math.round((lastSell.getTime() - firstBuy.getTime()) / (24 * 60 * 60 * 1000)),
+      Math.round((endDate.getTime() - firstBuy.getTime()) / (24 * 60 * 60 * 1000)),
     )
 
     positions.push({
@@ -699,7 +699,7 @@ export function calculateClosedPositions(
       totalSharesSold: s.totalSharesSold,
       remainingShares,
       totalCost: s.totalBuyCost + s.totalBuyFees,
-      totalProceeds: s.totalSellProceeds - s.totalSellFees,
+      totalProceeds: hasSells ? s.totalSellProceeds - s.totalSellFees : 0,
       totalFees,
       realizedPnL,
       realizedReturnPercent,
@@ -712,9 +712,11 @@ export function calculateClosedPositions(
     })
   })
 
-  // Sort: fully closed first, then by realized P/L descending
+  // Sort: closed first, then partial, then open; within each by realized P/L desc (or totalCost desc for open)
   return positions.sort((a, b) => {
-    if (a.status !== b.status) return a.status === "closed" ? -1 : 1
+    const order = { closed: 0, partial: 1, open: 2 }
+    if (a.status !== b.status) return order[a.status] - order[b.status]
+    if (a.status === "open") return b.totalCost - a.totalCost
     return b.realizedPnL - a.realizedPnL
   })
 }

@@ -72,29 +72,29 @@ export default function HelpPage() {
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Holdings</h3>
         <p className="mt-2 text-muted-foreground">
-          Holdings are derived from transactions: buys increase shares and cost basis; sells reduce shares and proportionally reduce cost basis (avg cost method). Unrealized P/L = (current price × shares) − total cost. Each holding also displays <strong>Total Return</strong> (unrealized P/L + realized gains from sold shares), computed using FIFO lot matching, so you can see the full picture of each position&apos;s performance.
+          Holdings are derived from transactions: buys increase shares and cost basis; sells reduce shares and proportionally reduce cost basis (avg cost method). Unrealized P/L = (current price × shares) − total cost. Each holding also displays <strong>Total Return</strong> (unrealized P/L + realized gains from sold shares), computed using FIFO lot matching, so you can see the full picture of each position&apos;s performance. A subtext under the table title shows position count and total portfolio value.
         </p>
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Trade History</h3>
         <p className="mt-2 text-muted-foreground">
-          The <strong>History</strong> tab shows performance for every position where you have sold shares — both fully closed positions and partially reduced ones. For each symbol it displays:
+          The <strong>History</strong> tab lists every symbol you have traded — including positions with no selling activity yet. For each symbol it shows:
         </p>
         <ul className="mt-2 list-disc list-inside space-y-1 text-muted-foreground">
           <li>
-            <strong>Status:</strong> &quot;Closed&quot; if all shares have been sold, or &quot;Partial&quot; if you still hold some.
+            <strong>Status:</strong> &quot;Closed&quot; (all shares sold), &quot;Partial&quot; (some sold, some still held), or &quot;Open&quot; (only buys so far; no sells).
           </li>
           <li>
-            <strong>Avg Buy / Avg Sell:</strong> Volume-weighted average price per share across all buys and sells.
+            <strong>Avg Buy / Avg Sell:</strong> Volume-weighted average price per share. Avg Sell and Proceeds show &quot;—&quot; for open positions.
           </li>
           <li>
-            <strong>Realized P/L:</strong> FIFO-based profit or loss from sold shares, including fees. Return percentage is relative to the cost basis of shares sold.
+            <strong>Realized P/L:</strong> FIFO-based profit or loss from sold shares, including fees. Open positions show &quot;—&quot; (no realized P/L yet).
           </li>
           <li>
-            <strong>Duration:</strong> Time from first buy to last sell. Also shows total trade count (buys + sells).
+            <strong>Duration:</strong> From first buy to last sell (or &quot;so far&quot; for open positions). Also shows total trade count (buys + sells).
           </li>
         </ul>
         <p className="mt-2 text-muted-foreground">
-          Use the status filter (All / Closed / Partial) to focus on specific position types.
+          The subtext under the title summarizes total realized P/L and counts (closed, partial, open). Use the status filter (All / Closed / Partial / Open) to focus on specific position types.
         </p>
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Export CSV</h3>
@@ -104,7 +104,7 @@ export default function HelpPage() {
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Market Performance</h3>
         <p className="mt-2 text-muted-foreground">
-          The <strong>Market</strong> tab shows recent price performance and fundamentals for every stock you hold. Data is fetched from Yahoo Finance using daily closing prices and real-time quote data.
+          The <strong>Market</strong> tab shows recent price performance and fundamentals for every stock you hold. Data is fetched from Yahoo Finance using daily closing prices and real-time quote data. The subtext under the title shows how many holdings are included.
         </p>
         <ul className="mt-2 list-disc list-inside space-y-1 text-muted-foreground">
           <li>

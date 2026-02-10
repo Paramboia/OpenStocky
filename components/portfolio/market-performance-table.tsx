@@ -156,7 +156,14 @@ export function MarketPerformanceTable() {
     <Card className="bg-card border-border">
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-foreground">Market Performance</CardTitle>
+          <div className="flex flex-col gap-1">
+            <CardTitle className="text-foreground">Market Performance</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {symbols.length > 0
+                ? `Price performance and fundamentals for your ${symbols.length} holding${symbols.length !== 1 ? "s" : ""}`
+                : "Live prices and metrics from Yahoo Finance for your holdings"}
+            </p>
+          </div>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
