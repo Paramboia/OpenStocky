@@ -597,6 +597,7 @@ export interface ClosedPosition {
   totalSharesSold: number
   remainingShares: number
   totalCost: number          // total $ spent on buys
+  costOfSoldShares: number   // FIFO cost basis of shares sold; 0 for open
   totalProceeds: number      // total $ received from sells (after fees); 0 for open
   totalFees: number          // buy + sell fees
   realizedPnL: number        // FIFO-based realized gain/loss; 0 for open
@@ -699,6 +700,7 @@ export function calculateClosedPositions(
       totalSharesSold: s.totalSharesSold,
       remainingShares,
       totalCost: s.totalBuyCost + s.totalBuyFees,
+      costOfSoldShares: costOfSold,
       totalProceeds: hasSells ? s.totalSellProceeds - s.totalSellFees : 0,
       totalFees,
       realizedPnL,

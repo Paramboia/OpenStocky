@@ -84,7 +84,10 @@ export default function HelpPage() {
             <strong>Status:</strong> &quot;Closed&quot; (all shares sold), &quot;Partial&quot; (some sold, some still held), or &quot;Open&quot; (only buys so far; no sells).
           </li>
           <li>
-            <strong>Avg Buy / Avg Sell:</strong> Volume-weighted average price per share. Avg Sell and Proceeds show &quot;—&quot; for open positions.
+            <strong>Avg Buy / Avg Sell:</strong> Volume-weighted average price per share. Avg Sell shows &quot;—&quot; for open positions.
+          </li>
+          <li>
+            <strong>Cost (sold) / Proceeds:</strong> Cost (sold) is the FIFO cost basis of the shares you sold (what you invested in those shares). Proceeds is what you received from those sales (after fees). Both show &quot;—&quot; for open positions.
           </li>
           <li>
             <strong>Realized P/L:</strong> FIFO-based profit or loss from sold shares, including fees. Open positions show &quot;—&quot; (no realized P/L yet).

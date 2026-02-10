@@ -231,6 +231,17 @@ export function HistoryTable() {
                       variant="ghost"
                       size="sm"
                       className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                      onClick={() => handleSort("costOfSoldShares")}
+                    >
+                      Cost (sold)
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right text-muted-foreground">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-muted-foreground hover:text-foreground"
                       onClick={() => handleSort("totalProceeds")}
                     >
                       Proceeds
@@ -305,6 +316,13 @@ export function HistoryTable() {
                             </span>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium text-foreground">
+                        {pos.status === "open" ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          `$${Math.round(pos.costOfSoldShares).toLocaleString("en-US")}`
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-medium text-foreground">
                         {pos.status === "open" ? (
