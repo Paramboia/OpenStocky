@@ -8,6 +8,7 @@ import { PerformanceChart } from "@/components/portfolio/performance-chart"
 import { PlAttributionChart } from "@/components/portfolio/pl-attribution-chart"
 import { RiskReturnChart } from "@/components/portfolio/risk-return-chart"
 import { MarketPerformanceTable } from "@/components/portfolio/market-performance-table"
+import { HistoryTable } from "@/components/portfolio/history-table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function PortfolioContent() {
@@ -42,6 +43,12 @@ export function PortfolioContent() {
                 Market
               </TabsTrigger>
               <TabsTrigger 
+                value="history" 
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
+              >
+                History
+              </TabsTrigger>
+              <TabsTrigger 
                 value="transactions" 
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
               >
@@ -53,6 +60,9 @@ export function PortfolioContent() {
             </TabsContent>
             <TabsContent value="market" className="mt-6">
               <MarketPerformanceTable />
+            </TabsContent>
+            <TabsContent value="history" className="mt-6">
+              <HistoryTable />
             </TabsContent>
             <TabsContent value="transactions" className="mt-6">
               <TransactionsTable />

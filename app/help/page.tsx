@@ -75,6 +75,28 @@ export default function HelpPage() {
           Holdings are derived from transactions: buys increase shares and cost basis; sells reduce shares and proportionally reduce cost basis (avg cost method). Unrealized P/L = (current price × shares) − total cost. Each holding also displays <strong>Total Return</strong> (unrealized P/L + realized gains from sold shares), computed using FIFO lot matching, so you can see the full picture of each position&apos;s performance.
         </p>
 
+        <h3 className="mt-6 text-base font-semibold text-foreground">Trade History</h3>
+        <p className="mt-2 text-muted-foreground">
+          The <strong>History</strong> tab shows performance for every position where you have sold shares — both fully closed positions and partially reduced ones. For each symbol it displays:
+        </p>
+        <ul className="mt-2 list-disc list-inside space-y-1 text-muted-foreground">
+          <li>
+            <strong>Status:</strong> &quot;Closed&quot; if all shares have been sold, or &quot;Partial&quot; if you still hold some.
+          </li>
+          <li>
+            <strong>Avg Buy / Avg Sell:</strong> Volume-weighted average price per share across all buys and sells.
+          </li>
+          <li>
+            <strong>Realized P/L:</strong> FIFO-based profit or loss from sold shares, including fees. Return percentage is relative to the cost basis of shares sold.
+          </li>
+          <li>
+            <strong>Duration:</strong> Time from first buy to last sell. Also shows total trade count (buys + sells).
+          </li>
+        </ul>
+        <p className="mt-2 text-muted-foreground">
+          Use the status filter (All / Closed / Partial) to focus on specific position types.
+        </p>
+
         <h3 className="mt-6 text-base font-semibold text-foreground">Export CSV</h3>
         <p className="mt-2 text-muted-foreground">
           Click <strong>Export CSV</strong> in the header to download all your transactions as a CSV file. The exported file uses the same column format as the batch upload (Transaction Date, Transaction Type, Symbol, Shares, Price per Share, Fees), so you can re-import it later via batch upload.

@@ -587,3 +587,134 @@ export function getTransactionsBySymbol(symbol: string): Transaction[] {
 export function getRecentTransactions(limit = 10): Transaction[] {
   return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, limit)
 }
+
+// --- Closed / historical positions ---
+
+export interface ClosedPosition {
+  symbol: string
+  status: "closed" | "partial"
+  totalSharesBought: number
+  totalSharesSold: number
+  remainingShares: number
+  totalCost: number          // total $ spent on buys
+  totalProceeds: number      // total $ received from sells (before fees)
+  totalFees: number          // buy + sell fees
+  realizedPnL: number        // FIFO-based realized gain/loss
+  realizedReturnPercent: number
+  avgBuyPrice: number
+  avgSellPrice: number
+  firstBuyDate: string
+  lastSellDate: string
+  holdingPeriodDays: number
+  trades: number             // total number of buy + sell transactions
+}
+
+export function calculateClosedPositions(
+  transactionData: Transaction[] = transactions,
+): ClosedPosition[] {
+  const sorted = [...transactionData].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  )
+
+  // Aggregate per-symbol stats from raw transactions
+  const symbolStats = new Map<
+    string,
+    {
+      totalSharesBought: number
+      totalSharesSold: number
+      totalBuyCost: number      // shares × price (no fees)
+      totalSellProceeds: number // shares × price (no fees)
+      totalBuyFees: number
+      totalSellFees: number
+      firstBuyDate: string
+      lastSellDate: string
+      trades: number
+    }
+  >()
+
+  for (const tx of sorted) {
+    const s = symbolStats.get(tx.symbol) || {
+      totalSharesBought: 0,
+      totalSharesSold: 0,
+      totalBuyCost: 0,
+      totalSellProceeds: 0,
+      totalBuyFees: 0,
+      totalSellFees: 0,
+      firstBuyDate: tx.date,
+      lastSellDate: "",
+      trades: 0,
+    }
+
+    s.trades += 1
+
+    if (tx.type === "buy") {
+      s.totalSharesBought += tx.shares
+      s.totalBuyCost += tx.shares * tx.pricePerShare
+      s.totalBuyFees += tx.fees
+      if (!s.firstBuyDate || tx.date < s.firstBuyDate) s.firstBuyDate = tx.date
+    } else {
+      s.totalSharesSold += tx.shares
+      s.totalSellProceeds += tx.shares * tx.pricePerShare
+      s.totalSellFees += tx.fees
+      if (!s.lastSellDate || tx.date > s.lastSellDate) s.lastSellDate = tx.date
+    }
+
+    symbolStats.set(tx.symbol, s)
+  }
+
+  // Use _processTransactions for FIFO-accurate realized P/L
+  const processed = _processTransactions(sorted)
+
+  const positions: ClosedPosition[] = []
+
+  symbolStats.forEach((s, symbol) => {
+    // Only include symbols that have at least one sell
+    if (s.totalSharesSold <= 0.0001) return
+
+    const remainingShares = Math.max(0, s.totalSharesBought - s.totalSharesSold)
+    const status: "closed" | "partial" = remainingShares < 0.01 ? "closed" : "partial"
+
+    const realizedPnL = processed.realizedMap.get(symbol) || 0
+
+    // Cost of shares sold (FIFO gives us realized P/L, but for return % we
+    // need the cost base of what was sold). For FIFO:
+    //   realizedPnL = proceeds − costOfSold − sellFees
+    //   costOfSold  = proceeds − sellFees − realizedPnL
+    const costOfSold = s.totalSellProceeds - s.totalSellFees - realizedPnL
+    const realizedReturnPercent = costOfSold > 0 ? (realizedPnL / costOfSold) * 100 : 0
+
+    const totalFees = s.totalBuyFees + s.totalSellFees
+
+    const firstBuy = new Date(s.firstBuyDate)
+    const lastSell = new Date(s.lastSellDate)
+    const holdingPeriodDays = Math.max(
+      0,
+      Math.round((lastSell.getTime() - firstBuy.getTime()) / (24 * 60 * 60 * 1000)),
+    )
+
+    positions.push({
+      symbol,
+      status,
+      totalSharesBought: s.totalSharesBought,
+      totalSharesSold: s.totalSharesSold,
+      remainingShares,
+      totalCost: s.totalBuyCost + s.totalBuyFees,
+      totalProceeds: s.totalSellProceeds - s.totalSellFees,
+      totalFees,
+      realizedPnL,
+      realizedReturnPercent,
+      avgBuyPrice: s.totalSharesBought > 0 ? s.totalBuyCost / s.totalSharesBought : 0,
+      avgSellPrice: s.totalSharesSold > 0 ? s.totalSellProceeds / s.totalSharesSold : 0,
+      firstBuyDate: s.firstBuyDate,
+      lastSellDate: s.lastSellDate,
+      holdingPeriodDays,
+      trades: s.trades,
+    })
+  })
+
+  // Sort: fully closed first, then by realized P/L descending
+  return positions.sort((a, b) => {
+    if (a.status !== b.status) return a.status === "closed" ? -1 : 1
+    return b.realizedPnL - a.realizedPnL
+  })
+}
