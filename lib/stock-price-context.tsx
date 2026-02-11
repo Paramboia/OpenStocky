@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useCallback, useMemo, type ReactNode } from "react"
-import useSWR from "swr"
+import useSWR, { useSWRConfig } from "swr"
 import { useTransactions } from "@/lib/transactions-store"
 
 interface StockPriceContextType {
@@ -49,7 +49,8 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
   const transactions = useTransactions()
   const symbols = useMemo(() => getActiveSymbols(transactions), [transactions])
   const symbolsParam = symbols.join(",")
-  
+  const { mutate: globalMutate } = useSWRConfig()
+
   const { data, error, isLoading, mutate } = useSWR(
     symbolsParam ? `/api/stock-prices?symbols=${symbolsParam}` : null,
     fetcher,
@@ -62,7 +63,13 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(() => {
     mutate(undefined, { revalidate: true })
-  }, [mutate])
+    // Also revalidate Market table data (performance endpoint)
+    globalMutate(
+      (key) => typeof key === "string" && key.startsWith("/api/stock-prices/performance"),
+      undefined,
+      { revalidate: true },
+    )
+  }, [mutate, globalMutate])
 
   const filteredPrices = useMemo(() => {
     if (!data?.prices || symbols.length === 0) return {}
