@@ -40,6 +40,29 @@ interface PerformanceEntry {
 
 type SortKey = keyof PerformanceEntry
 type SortDirection = "asc" | "desc"
+type DualSortMode = 0 | 1 | 2 | 3 // 0: highest %, 1: highest abs, 2: lowest %, 3: lowest abs
+
+function getDualSortNext(
+  absKey: SortKey,
+  pctKey: SortKey,
+  currentKey: SortKey,
+  currentDir: SortDirection
+): { key: SortKey; direction: SortDirection } {
+  const isSameColumn = currentKey === absKey || currentKey === pctKey
+  if (!isSameColumn) {
+    return { key: pctKey, direction: "desc" } // first click: highest %
+  }
+  let mode: DualSortMode = 0
+  if (currentKey === pctKey && currentDir === "desc") mode = 0
+  else if (currentKey === absKey && currentDir === "desc") mode = 1
+  else if (currentKey === pctKey && currentDir === "asc") mode = 2
+  else mode = 3
+  const nextMode = ((mode + 1) % 4) as DualSortMode
+  if (nextMode === 0) return { key: pctKey, direction: "desc" }
+  if (nextMode === 1) return { key: absKey, direction: "desc" }
+  if (nextMode === 2) return { key: pctKey, direction: "asc" }
+  return { key: absKey, direction: "asc" }
+}
 
 /* ---------- Helpers ---------- */
 
@@ -104,6 +127,36 @@ function SortableHead({
   )
 }
 
+/** Dual-value column (%, abs) — cycles: highest % → highest abs → lowest % → lowest abs. */
+function DualSortableHead({
+  label,
+  absKey,
+  pctKey,
+  currentKey,
+  onDualSort,
+}: {
+  label: string
+  absKey: SortKey
+  pctKey: SortKey
+  currentKey: SortKey
+  onDualSort: (abs: SortKey, pct: SortKey) => void
+}) {
+  const isActive = currentKey === absKey || currentKey === pctKey
+  return (
+    <TableHead className="text-right text-muted-foreground">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2 text-muted-foreground hover:text-foreground"
+        onClick={() => onDualSort(absKey, pctKey)}
+      >
+        {label}
+        <ArrowUpDown className={`ml-1.5 h-3.5 w-3.5 ${isActive ? "opacity-100" : "opacity-40"}`} />
+      </Button>
+    </TableHead>
+  )
+}
+
 /* ---------- Component ---------- */
 
 export function MarketPerformanceTable() {
@@ -148,6 +201,12 @@ export function MarketPerformanceTable() {
       setSortKey(key)
       setSortDirection("desc")
     }
+  }
+
+  const handleDualSort = (absKey: SortKey, pctKey: SortKey) => {
+    const next = getDualSortNext(absKey, pctKey, sortKey, sortDirection)
+    setSortKey(next.key)
+    setSortDirection(next.direction)
   }
 
   /* ---- Render ---- */
@@ -220,9 +279,9 @@ export function MarketPerformanceTable() {
                     </TableHead>
 
                     <SortableHead label="Price" sortKey="price" currentKey={sortKey} direction={sortDirection} onSort={handleSort} />
-                    <SortableHead label="1D" sortKey="changePercent1D" currentKey={sortKey} direction={sortDirection} onSort={handleSort} />
-                    <SortableHead label="7D" sortKey="changePercent7D" currentKey={sortKey} direction={sortDirection} onSort={handleSort} />
-                    <SortableHead label="1M" sortKey="changePercent1M" currentKey={sortKey} direction={sortDirection} onSort={handleSort} />
+                    <DualSortableHead label="1D" absKey="change1D" pctKey="changePercent1D" currentKey={sortKey} onDualSort={handleDualSort} />
+                    <DualSortableHead label="7D" absKey="change7D" pctKey="changePercent7D" currentKey={sortKey} onDualSort={handleDualSort} />
+                    <DualSortableHead label="1M" absKey="change1M" pctKey="changePercent1M" currentKey={sortKey} onDualSort={handleDualSort} />
                     <SortableHead label="P/E" sortKey="trailingPE" currentKey={sortKey} direction={sortDirection} onSort={handleSort} />
                     <SortableHead label="52W Range" sortKey="fiftyTwoWeekPosition" currentKey={sortKey} direction={sortDirection} onSort={handleSort} />
                     <SortableHead label="Mkt Cap" sortKey="marketCap" currentKey={sortKey} direction={sortDirection} onSort={handleSort} />

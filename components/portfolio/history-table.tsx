@@ -18,6 +18,29 @@ import { useTransactions } from "@/lib/transactions-store"
 
 type SortKey = keyof ClosedPosition
 type SortDirection = "asc" | "desc"
+type DualSortMode = 0 | 1 | 2 | 3 // 0: highest %, 1: highest abs, 2: lowest %, 3: lowest abs
+
+function getDualSortNext(
+  absKey: SortKey,
+  pctKey: SortKey,
+  currentKey: SortKey,
+  currentDir: SortDirection
+): { key: SortKey; direction: SortDirection } {
+  const isSameColumn = currentKey === absKey || currentKey === pctKey
+  if (!isSameColumn) {
+    return { key: pctKey, direction: "desc" } // first click: highest %
+  }
+  let mode: DualSortMode = 0
+  if (currentKey === pctKey && currentDir === "desc") mode = 0
+  else if (currentKey === absKey && currentDir === "desc") mode = 1
+  else if (currentKey === pctKey && currentDir === "asc") mode = 2
+  else mode = 3
+  const nextMode = ((mode + 1) % 4) as DualSortMode
+  if (nextMode === 0) return { key: pctKey, direction: "desc" }
+  if (nextMode === 1) return { key: absKey, direction: "desc" }
+  if (nextMode === 2) return { key: pctKey, direction: "asc" }
+  return { key: absKey, direction: "asc" }
+}
 
 function formatDuration(days: number): string {
   if (days < 1) return "<1d"
@@ -34,7 +57,7 @@ function formatDuration(days: number): string {
 
 export function HistoryTable() {
   const [search, setSearch] = useState("")
-  const [sortKey, setSortKey] = useState<SortKey>("realizedPnL")
+  const [sortKey, setSortKey] = useState<SortKey>("realizedReturnPercent")
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
   const [statusFilter, setStatusFilter] = useState<"all" | "closed" | "partial" | "open">("all")
 
@@ -63,6 +86,12 @@ export function HistoryTable() {
       setSortKey(key)
       setSortDirection("desc")
     }
+  }
+
+  const handleDualSort = (absKey: SortKey, pctKey: SortKey) => {
+    const next = getDualSortNext(absKey, pctKey, sortKey, sortDirection)
+    setSortKey(next.key)
+    setSortDirection(next.direction)
   }
 
   // Summary stats
@@ -253,7 +282,7 @@ export function HistoryTable() {
                       variant="ghost"
                       size="sm"
                       className="h-8 px-2 text-muted-foreground hover:text-foreground"
-                      onClick={() => handleSort("realizedPnL")}
+                      onClick={() => handleDualSort("realizedPnL", "realizedReturnPercent")}
                     >
                       Realized P/L
                       <ArrowUpDown className="ml-2 h-4 w-4" />
