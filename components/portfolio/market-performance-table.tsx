@@ -41,6 +41,46 @@ interface PerformanceEntry {
 type SortKey = keyof PerformanceEntry
 type SortDirection = "asc" | "desc"
 
+type PerformanceSortMetric = {
+  percent: number | null
+  amount: number | null
+}
+
+function compareSignedPercentThenAmount(
+  aMetric: PerformanceSortMetric,
+  bMetric: PerformanceSortMetric,
+  direction: SortDirection,
+) {
+  const { percent: aPercent, amount: aAmount } = aMetric
+  const { percent: bPercent, amount: bAmount } = bMetric
+
+  if (aPercent === null && bPercent === null) return 0
+  if (aPercent === null) return 1
+  if (bPercent === null) return -1
+
+  const mod = direction === "asc" ? -1 : 1
+  const aPositive = aPercent >= 0
+  const bPositive = bPercent >= 0
+
+  if (aPositive !== bPositive) {
+    return aPositive ? -1 * mod : 1 * mod
+  }
+
+  if (aPercent !== bPercent) {
+    return (bPercent - aPercent) * mod
+  }
+
+  if (aAmount === null && bAmount === null) return 0
+  if (aAmount === null) return 1
+  if (bAmount === null) return -1
+
+  if (aAmount !== bAmount) {
+    return (bAmount - aAmount) * mod
+  }
+
+  return 0
+}
+
 /* ---------- Helpers ---------- */
 
 const fetcher = async (url: string) => {
@@ -131,6 +171,30 @@ export function MarketPerformanceTable() {
   const filtered = rows.filter((r) => r.symbol.toLowerCase().includes(search.toLowerCase()))
 
   const sorted = [...filtered].sort((a, b) => {
+    if (sortKey === "changePercent1D") {
+      return compareSignedPercentThenAmount(
+        { percent: a.changePercent1D, amount: a.change1D },
+        { percent: b.changePercent1D, amount: b.change1D },
+        sortDirection,
+      )
+    }
+
+    if (sortKey === "changePercent7D") {
+      return compareSignedPercentThenAmount(
+        { percent: a.changePercent7D, amount: a.change7D },
+        { percent: b.changePercent7D, amount: b.change7D },
+        sortDirection,
+      )
+    }
+
+    if (sortKey === "changePercent1M") {
+      return compareSignedPercentThenAmount(
+        { percent: a.changePercent1M, amount: a.change1M },
+        { percent: b.changePercent1M, amount: b.change1M },
+        sortDirection,
+      )
+    }
+
     const av = a[sortKey]
     const bv = b[sortKey]
     const mod = sortDirection === "asc" ? 1 : -1
