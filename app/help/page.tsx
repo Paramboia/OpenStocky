@@ -68,6 +68,9 @@ export default function HelpPage() {
           <li>
             <strong>Short-sell protection:</strong> Sell transactions are clamped so you cannot sell more shares than you currently hold for a given symbol.
           </li>
+          <li>
+            <strong>Edit &amp; Delete:</strong> In the Transaction History table, swipe a row left to reveal <strong>Edit</strong> and <strong>Delete</strong> buttons. Tap <strong>Edit</strong> to update any field (date, type, symbol, shares, price, fees); tap <strong>Delete</strong> to remove the transaction. Useful for correcting typos or removing erroneous entries.
+          </li>
         </ul>
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Holdings</h3>
@@ -102,7 +105,7 @@ export default function HelpPage() {
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Export CSV</h3>
         <p className="mt-2 text-muted-foreground">
-          Click <strong>Export CSV</strong> in the header to download all your transactions as a CSV file. The exported file uses the same column format as the batch upload (Transaction Date, Transaction Type, Symbol, Shares, Price per Share, Fees), so you can re-import it later via batch upload.
+          Click <strong>Export CSV</strong> in the header to download all your transactions as a CSV file. This is useful for backing up your data, sharing records with an accountant, or migrating to another tool. The exported file uses the same column format as the batch upload (Transaction Date, Transaction Type, Symbol, Shares, Price per Share, Fees), so you can re-import it later via batch upload — for example, after editing in a spreadsheet.
         </p>
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Market Performance</h3>

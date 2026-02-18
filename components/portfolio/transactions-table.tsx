@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { ArrowUpRight, ArrowDownRight, Search, Filter, Trash2, X } from "lucide-react"
+import { ArrowUpRight, ArrowDownRight, Search, Filter, Trash2, Pencil, X } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select"
 import type { Transaction } from "@/lib/portfolio-data"
 import { removeTransaction, useTransactions } from "@/lib/transactions-store"
+import { EditTransactionDialog } from "@/components/portfolio/edit-transaction-dialog"
 
 export function TransactionsTable() {
   const transactions = useTransactions()
@@ -31,9 +32,11 @@ export function TransactionsTable() {
   const [typeFilter, setTypeFilter] = useState<"all" | "buy" | "sell">("all")
   const [page, setPage] = useState(1)
   const [rowOffsets, setRowOffsets] = useState<Record<string, number>>({})
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const dragState = useRef({ id: "", startX: 0, startOffset: 0 })
   const perPage = 15
-  const maxSwipeOffset = -96
+  const maxSwipeOffset = -160
   const revealThreshold = -8
 
   useEffect(() => {
@@ -96,6 +99,12 @@ export function TransactionsTable() {
     setRowOffsets((prev) => ({ ...prev, [id]: shouldOpen ? maxSwipeOffset : 0 }))
     dragState.current = { id: "", startX: 0, startOffset: 0 }
     event.currentTarget.releasePointerCapture(event.pointerId)
+  }
+
+  const handleEdit = (tx: Transaction) => {
+    setEditingTransaction(tx)
+    setEditDialogOpen(true)
+    setRowOffsets((prev) => ({ ...prev, [tx.id]: 0 }))
   }
 
   const handleDelete = (id: string) => {
@@ -188,18 +197,34 @@ export function TransactionsTable() {
                   <TableCell colSpan={7} className="p-0">
                     <div className="relative overflow-hidden">
                       <div
-                        className="absolute inset-0 flex items-center justify-end gap-2 bg-destructive px-4 text-destructive-foreground transition-opacity duration-200"
+                        className="absolute inset-0 flex items-center justify-end gap-2 bg-secondary border-l border-border px-2 transition-opacity duration-200"
                         style={{
                           opacity: (rowOffsets[tx.id] ?? 0) <= revealThreshold ? 1 : 0,
                           pointerEvents: (rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? "auto" : "none",
                         }}
-                        role="button"
-                        tabIndex={(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? 0 : -1}
-                        aria-label={`Delete transaction ${tx.symbol} ${formatDate(tx.date)}`}
-                        onClick={() => handleDelete(tx.id)}
+                        role="group"
+                        aria-label={`Actions for transaction ${tx.symbol} ${formatDate(tx.date)}`}
                       >
-                        <Trash2 className="h-5 w-5" />
-                        <span className="text-sm font-semibold">Delete</span>
+                        <button
+                          type="button"
+                          tabIndex={(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? 0 : -1}
+                          className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                          onClick={() => handleEdit(tx)}
+                          aria-label={`Edit transaction ${tx.symbol} ${formatDate(tx.date)}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          tabIndex={(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? 0 : -1}
+                          className="flex items-center gap-2 rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90"
+                          onClick={() => handleDelete(tx.id)}
+                          aria-label={`Delete transaction ${tx.symbol} ${formatDate(tx.date)}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </button>
                       </div>
                       <div
                         className="grid grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr_1fr_0.8fr_1fr] items-center gap-0 bg-card px-4 py-4 text-foreground transition-transform duration-200 ease-out hover:bg-secondary/50"
@@ -286,6 +311,14 @@ export function TransactionsTable() {
         </>
         )}
       </CardContent>
+      <EditTransactionDialog
+        transaction={editingTransaction}
+        open={editDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open)
+          if (!open) setEditingTransaction(null)
+        }}
+      />
     </Card>
   )
 }
