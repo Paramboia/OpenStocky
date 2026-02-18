@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { ArrowUpRight, ArrowDownRight, Search, Filter, Trash2, Pencil, X } from "lucide-react"
+import { ArrowUpRight, ArrowDownRight, ArrowUpDown, Search, Filter, Trash2, Pencil, X } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -30,6 +30,7 @@ export function TransactionsTable() {
   const [rows, setRows] = useState(transactions)
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState<"all" | "buy" | "sell">("all")
+  const [dateSortDirection, setDateSortDirection] = useState<"asc" | "desc">("desc")
   const [page, setPage] = useState(1)
   const [rowOffsets, setRowOffsets] = useState<Record<string, number>>({})
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
@@ -50,9 +51,17 @@ export function TransactionsTable() {
     return matchesSearch && matchesType
   })
 
-  const sortedTransactions = [...filteredTransactions].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  )
+  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    const aTime = new Date(a.date).getTime()
+    const bTime = new Date(b.date).getTime()
+    const modifier = dateSortDirection === "asc" ? 1 : -1
+    return (aTime - bTime) * modifier
+  })
+
+  const handleDateSort = () => {
+    setDateSortDirection((d) => (d === "asc" ? "desc" : "asc"))
+    setPage(1)
+  }
 
   const totalPages = Math.ceil(sortedTransactions.length / perPage)
   const paginatedTransactions = sortedTransactions.slice(
@@ -124,7 +133,7 @@ export function TransactionsTable() {
             <CardTitle className="text-foreground">Transaction History</CardTitle>
             <p className="text-sm text-muted-foreground">
               {transactions.length > 0
-                ? `${transactions.length} transaction${transactions.length !== 1 ? "s" : ""} • Newest first`
+                ? `${transactions.length} transaction${transactions.length !== 1 ? "s" : ""} • ${dateSortDirection === "desc" ? "Newest first" : "Oldest first"}`
                 : "All buys and sells in chronological order"}
             </p>
           </div>
@@ -182,7 +191,17 @@ export function TransactionsTable() {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-secondary/50">
-                <TableHead className="text-muted-foreground">Date</TableHead>
+                <TableHead className="text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-muted-foreground hover:text-foreground -ml-2"
+                    onClick={handleDateSort}
+                  >
+                    Date
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
                 <TableHead className="text-muted-foreground">Type</TableHead>
                 <TableHead className="text-muted-foreground">Symbol</TableHead>
                 <TableHead className="text-right text-muted-foreground">Shares</TableHead>
@@ -197,7 +216,7 @@ export function TransactionsTable() {
                   <TableCell colSpan={7} className="p-0">
                     <div className="relative overflow-hidden">
                       <div
-                        className="absolute right-0 top-0 bottom-0 flex w-[160px] transition-opacity duration-200"
+                          className="absolute right-0 top-0 bottom-0 flex w-[160px] transition-opacity duration-200"
                         style={{
                           opacity: (rowOffsets[tx.id] ?? 0) <= revealThreshold ? 1 : 0,
                           pointerEvents: (rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? "auto" : "none",
