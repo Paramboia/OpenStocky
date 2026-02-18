@@ -63,7 +63,7 @@ export function AddTransactionDialog({ trigger }: AddTransactionDialogProps) {
     const newTransaction = {
       date: formData.date,
       type: formData.type,
-      symbol: formData.symbol.toUpperCase(),
+      symbol: formData.symbol.trim().toUpperCase(),
       shares,
       pricePerShare: price,
       fees,
@@ -171,7 +171,7 @@ export function AddTransactionDialog({ trigger }: AddTransactionDialogProps) {
               id="symbol"
               placeholder="AAPL, GOOGL, MSFT..."
               value={formData.symbol}
-              onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
+              onChange={(e) => setFormData({ ...formData, symbol: e.target.value.trim().toUpperCase() })}
               className="bg-secondary border-border text-foreground placeholder:text-muted-foreground uppercase"
               required
             />

@@ -100,7 +100,7 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
       id: createId(index),
       date,
       type: normalizedType,
-      symbol: symbol.toUpperCase(),
+      symbol: symbol.trim().toUpperCase(),
       shares,
       pricePerShare,
       fees,
