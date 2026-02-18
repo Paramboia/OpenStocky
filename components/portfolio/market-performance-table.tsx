@@ -157,12 +157,15 @@ function DualSortableHead({
   )
 }
 
+const perPage = 15
+
 /* ---------- Component ---------- */
 
 export function MarketPerformanceTable() {
   const [search, setSearch] = useState("")
   const [sortKey, setSortKey] = useState<SortKey>("changePercent1D")
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
+  const [page, setPage] = useState(1)
 
   const { prices } = useStockPrices()
   const transactions = useTransactions()
@@ -194,6 +197,9 @@ export function MarketPerformanceTable() {
     return String(av).localeCompare(String(bv)) * mod
   })
 
+  const totalPages = Math.ceil(sorted.length / perPage)
+  const paginated = sorted.slice((page - 1) * perPage, page * perPage)
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDirection((d) => (d === "asc" ? "desc" : "asc"))
@@ -201,12 +207,14 @@ export function MarketPerformanceTable() {
       setSortKey(key)
       setSortDirection("desc")
     }
+    setPage(1)
   }
 
   const handleDualSort = (absKey: SortKey, pctKey: SortKey) => {
     const next = getDualSortNext(absKey, pctKey, sortKey, sortDirection)
     setSortKey(next.key)
     setSortDirection(next.direction)
+    setPage(1)
   }
 
   /* ---- Render ---- */
@@ -228,7 +236,10 @@ export function MarketPerformanceTable() {
             <Input
               placeholder="Search symbol..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
               className="pl-9 pr-9 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
             />
             {search && (
@@ -260,6 +271,7 @@ export function MarketPerformanceTable() {
             Failed to load market data
           </div>
         ) : (
+          <>
           <div className="rounded-lg border border-border overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
@@ -290,7 +302,7 @@ export function MarketPerformanceTable() {
                 </TableHeader>
 
                 <TableBody>
-                  {sorted.map((s) => {
+                  {paginated.map((s) => {
                     const pos = s.fiftyTwoWeekPosition
                     const posColor =
                       pos !== null
@@ -380,6 +392,38 @@ export function MarketPerformanceTable() {
               </Table>
             </div>
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {(page - 1) * perPage + 1} to {Math.min(page * perPage, sorted.length)} of {sorted.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="bg-secondary border-border text-foreground hover:bg-secondary/80"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-foreground">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="bg-secondary border-border text-foreground hover:bg-secondary/80"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </CardContent>
     </Card>

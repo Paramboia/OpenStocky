@@ -42,6 +42,8 @@ function getDualSortNext(
   return { key: absKey, direction: "asc" }
 }
 
+const perPage = 15
+
 function formatDuration(days: number): string {
   if (days < 1) return "<1d"
   if (days < 30) return `${days}d`
@@ -60,6 +62,7 @@ export function HistoryTable() {
   const [sortKey, setSortKey] = useState<SortKey>("realizedReturnPercent")
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
   const [statusFilter, setStatusFilter] = useState<"all" | "closed" | "partial" | "open">("all")
+  const [page, setPage] = useState(1)
 
   const transactions = useTransactions()
   const positions = calculateClosedPositions(transactions)
@@ -79,6 +82,9 @@ export function HistoryTable() {
     return String(aValue).localeCompare(String(bValue)) * modifier
   })
 
+  const totalPages = Math.ceil(sortedPositions.length / perPage)
+  const paginatedPositions = sortedPositions.slice((page - 1) * perPage, page * perPage)
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc")
@@ -86,12 +92,14 @@ export function HistoryTable() {
       setSortKey(key)
       setSortDirection("desc")
     }
+    setPage(1)
   }
 
   const handleDualSort = (absKey: SortKey, pctKey: SortKey) => {
     const next = getDualSortNext(absKey, pctKey, sortKey, sortDirection)
     setSortKey(next.key)
     setSortDirection(next.direction)
+    setPage(1)
   }
 
   // Summary stats
@@ -135,7 +143,7 @@ export function HistoryTable() {
             <div className="flex bg-secondary border border-border rounded-md overflow-hidden">
               <button
                 type="button"
-                onClick={() => setStatusFilter("all")}
+                onClick={() => { setStatusFilter("all"); setPage(1) }}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   statusFilter === "all"
                     ? "bg-primary text-primary-foreground"
@@ -146,7 +154,7 @@ export function HistoryTable() {
               </button>
               <button
                 type="button"
-                onClick={() => setStatusFilter("closed")}
+                onClick={() => { setStatusFilter("closed"); setPage(1) }}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   statusFilter === "closed"
                     ? "bg-primary text-primary-foreground"
@@ -157,7 +165,7 @@ export function HistoryTable() {
               </button>
               <button
                 type="button"
-                onClick={() => setStatusFilter("partial")}
+                onClick={() => { setStatusFilter("partial"); setPage(1) }}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   statusFilter === "partial"
                     ? "bg-primary text-primary-foreground"
@@ -168,7 +176,7 @@ export function HistoryTable() {
               </button>
               <button
                 type="button"
-                onClick={() => setStatusFilter("open")}
+                onClick={() => { setStatusFilter("open"); setPage(1) }}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   statusFilter === "open"
                     ? "bg-primary text-primary-foreground"
@@ -183,7 +191,10 @@ export function HistoryTable() {
               <Input
                 placeholder="Search symbol..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setPage(1)
+                }}
                 className="pl-9 pr-9 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
               />
               {search && (
@@ -206,6 +217,7 @@ export function HistoryTable() {
             Add transactions to see your trade history
           </div>
         ) : (
+          <>
           <div className="rounded-lg border border-border overflow-hidden">
             <Table>
               <TableHeader>
@@ -302,7 +314,7 @@ export function HistoryTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedPositions.map((pos) => {
+                {paginatedPositions.map((pos) => {
                   const isPositive = pos.realizedPnL >= 0
 
                   return (
@@ -401,6 +413,38 @@ export function HistoryTable() {
               </TableBody>
             </Table>
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {(page - 1) * perPage + 1} to {Math.min(page * perPage, sortedPositions.length)} of {sortedPositions.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="bg-secondary border-border text-foreground hover:bg-secondary/80"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-foreground">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="bg-secondary border-border text-foreground hover:bg-secondary/80"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </CardContent>
     </Card>

@@ -43,10 +43,13 @@ function getDualSortNext(
   return { key: absKey, direction: "asc" }
 }
 
+const perPage = 15
+
 export function HoldingsTable() {
   const [search, setSearch] = useState("")
   const [sortKey, setSortKey] = useState<SortKey>("currentValue")
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
+  const [page, setPage] = useState(1)
 
   const { prices } = useStockPrices()
   const transactions = useTransactions()
@@ -67,6 +70,9 @@ export function HoldingsTable() {
     return String(aValue).localeCompare(String(bValue)) * modifier
   })
 
+  const totalPages = Math.ceil(sortedHoldings.length / perPage)
+  const paginatedHoldings = sortedHoldings.slice((page - 1) * perPage, page * perPage)
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc")
@@ -74,12 +80,14 @@ export function HoldingsTable() {
       setSortKey(key)
       setSortDirection("desc")
     }
+    setPage(1)
   }
 
   const handleDualSort = (absKey: SortKey, pctKey: SortKey) => {
     const next = getDualSortNext(absKey, pctKey, sortKey, sortDirection)
     setSortKey(next.key)
     setSortDirection(next.direction)
+    setPage(1)
   }
 
   const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0)
@@ -101,7 +109,10 @@ export function HoldingsTable() {
             <Input
               placeholder="Search symbol..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
               className="pl-9 pr-9 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
             />
             {search && (
@@ -123,6 +134,7 @@ export function HoldingsTable() {
             Add transactions to see your holdings
           </div>
         ) : (
+        <>
         <div className="rounded-lg border border-border overflow-hidden">
           <Table>
             <TableHeader>
@@ -208,7 +220,7 @@ export function HoldingsTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedHoldings.map((holding) => {
+              {paginatedHoldings.map((holding) => {
                 const isPositive = holding.gainLoss >= 0
                 const isTotalPositive = holding.totalReturn >= 0
                 const allocation = totalValue > 0 ? (holding.currentValue / totalValue) * 100 : 0
@@ -271,6 +283,38 @@ export function HoldingsTable() {
             </TableBody>
           </Table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-sm text-muted-foreground">
+              Showing {(page - 1) * perPage + 1} to {Math.min(page * perPage, sortedHoldings.length)} of {sortedHoldings.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="bg-secondary border-border text-foreground hover:bg-secondary/80"
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-foreground">
+                Page {page} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="bg-secondary border-border text-foreground hover:bg-secondary/80"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+        </>
         )}
       </CardContent>
     </Card>
