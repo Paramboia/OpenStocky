@@ -197,7 +197,7 @@ export function TransactionsTable() {
                   <TableCell colSpan={7} className="p-0">
                     <div className="relative overflow-hidden">
                       <div
-                        className="absolute inset-0 flex transition-opacity duration-200"
+                        className="absolute right-0 top-0 bottom-0 flex w-[160px] transition-opacity duration-200"
                         style={{
                           opacity: (rowOffsets[tx.id] ?? 0) <= revealThreshold ? 1 : 0,
                           pointerEvents: (rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? "auto" : "none",
@@ -208,22 +208,20 @@ export function TransactionsTable() {
                         <button
                           type="button"
                           tabIndex={(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? 0 : -1}
-                          className="flex flex-1 items-center justify-center gap-2 bg-secondary text-foreground transition-colors hover:bg-secondary/80"
+                          className="flex flex-1 items-center justify-center bg-secondary text-foreground transition-colors hover:bg-secondary/80"
                           onClick={() => handleEdit(tx)}
                           aria-label={`Edit transaction ${tx.symbol} ${formatDate(tx.date)}`}
                         >
                           <Pencil className="h-5 w-5" />
-                          <span className="text-sm font-semibold">Edit</span>
                         </button>
                         <button
                           type="button"
                           tabIndex={(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? 0 : -1}
-                          className="flex flex-1 items-center justify-center gap-2 bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/90"
+                          className="flex flex-1 items-center justify-center bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/90"
                           onClick={() => handleDelete(tx.id)}
                           aria-label={`Delete transaction ${tx.symbol} ${formatDate(tx.date)}`}
                         >
                           <Trash2 className="h-5 w-5" />
-                          <span className="text-sm font-semibold">Delete</span>
                         </button>
                       </div>
                       <div
