@@ -157,27 +157,27 @@ export function PortfolioHeader() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
-            <KpiTooltip content="Internal Rate of Return - Money-weighted annualized return accounting for timing and size of cash flows">
+            <KpiTooltip content={stats.yearsInvested < 1 ? "Annualized metrics require at least 1 year of history" : "Internal Rate of Return - Money-weighted annualized return accounting for timing and size of cash flows"}>
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Percent className="h-3 w-3" /> IRR
                 </p>
-                <p className={`text-xl font-bold ${isIrrPositive ? "text-primary" : "text-destructive"}`}>
-                  {isIrrPositive ? "+" : ""}{stats.irr.toFixed(1)}%
+                <p className={`text-xl font-bold ${stats.yearsInvested < 1 ? "text-muted-foreground" : isIrrPositive ? "text-primary" : "text-destructive"}`}>
+                  {stats.yearsInvested < 1 ? "—" : `${isIrrPositive ? "+" : ""}${stats.irr.toFixed(1)}%`}
                 </p>
-                <p className="text-xs text-muted-foreground">annualized</p>
+                <p className="text-xs text-muted-foreground">{stats.yearsInvested < 1 ? "< 1 year" : "annualized"}</p>
               </div>
             </KpiTooltip>
 
-            <KpiTooltip content="Compound Annual Growth Rate based on net invested capital vs current portfolio value">
+            <KpiTooltip content={stats.yearsInvested < 1 ? "Annualized metrics require at least 1 year of history" : "Compound Annual Growth Rate based on net invested capital vs current portfolio value"}>
               <div className="space-y-1 cursor-help">
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" /> CAGR
                 </p>
-                <p className={`text-xl font-bold ${isCagrPositive ? "text-primary" : "text-destructive"}`}>
-                  {stats.cagr === Infinity ? "∞" : `${isCagrPositive ? "+" : ""}${stats.cagr.toFixed(1)}%`}
+                <p className={`text-xl font-bold ${stats.yearsInvested < 1 ? "text-muted-foreground" : isCagrPositive ? "text-primary" : "text-destructive"}`}>
+                  {stats.yearsInvested < 1 ? "—" : stats.cagr === Infinity ? "∞" : `${isCagrPositive ? "+" : ""}${stats.cagr.toFixed(1)}%`}
                 </p>
-                <p className="text-xs text-muted-foreground">per year</p>
+                <p className="text-xs text-muted-foreground">{stats.yearsInvested < 1 ? "< 1 year" : "per year"}</p>
               </div>
             </KpiTooltip>
 
