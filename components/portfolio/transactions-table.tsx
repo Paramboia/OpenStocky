@@ -197,7 +197,7 @@ export function TransactionsTable() {
                   <TableCell colSpan={7} className="p-0">
                     <div className="relative overflow-hidden">
                       <div
-                        className="absolute inset-0 flex items-center justify-end gap-2 bg-secondary border-l border-border px-2 transition-opacity duration-200"
+                        className="absolute inset-0 flex transition-opacity duration-200"
                         style={{
                           opacity: (rowOffsets[tx.id] ?? 0) <= revealThreshold ? 1 : 0,
                           pointerEvents: (rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? "auto" : "none",
@@ -208,22 +208,22 @@ export function TransactionsTable() {
                         <button
                           type="button"
                           tabIndex={(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? 0 : -1}
-                          className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                          className="flex flex-1 items-center justify-center gap-2 bg-secondary text-foreground transition-colors hover:bg-secondary/80"
                           onClick={() => handleEdit(tx)}
                           aria-label={`Edit transaction ${tx.symbol} ${formatDate(tx.date)}`}
                         >
-                          <Pencil className="h-4 w-4" />
-                          Edit
+                          <Pencil className="h-5 w-5" />
+                          <span className="text-sm font-semibold">Edit</span>
                         </button>
                         <button
                           type="button"
                           tabIndex={(rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? 0 : -1}
-                          className="flex items-center gap-2 rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90"
+                          className="flex flex-1 items-center justify-center gap-2 bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/90"
                           onClick={() => handleDelete(tx.id)}
                           aria-label={`Delete transaction ${tx.symbol} ${formatDate(tx.date)}`}
                         >
-                          <Trash2 className="h-4 w-4" />
-                          Delete
+                          <Trash2 className="h-5 w-5" />
+                          <span className="text-sm font-semibold">Delete</span>
                         </button>
                       </div>
                       <div
