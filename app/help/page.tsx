@@ -103,11 +103,6 @@ export default function HelpPage() {
           The subtext under the title summarizes total realized P/L and counts (closed, partial, open). Use the status filter (All / Closed / Partial / Open) to focus on specific position types.
         </p>
 
-        <h3 className="mt-6 text-base font-semibold text-foreground">Export CSV</h3>
-        <p className="mt-2 text-muted-foreground">
-          Click <strong>Export CSV</strong> in the header to download all your transactions as a CSV file. This is useful for backing up your data, sharing records with an accountant, or migrating to another tool. The exported file uses the same column format as the batch upload (Transaction Date, Transaction Type, Symbol, Shares, Price per Share, Fees), so you can re-import it later via batch upload — for example, after editing in a spreadsheet.
-        </p>
-
         <h3 className="mt-6 text-base font-semibold text-foreground">Market Performance</h3>
         <p className="mt-2 text-muted-foreground">
           The <strong>Market</strong> tab shows recent price performance and fundamentals for every stock you hold. Data is fetched from Yahoo Finance using daily closing prices and real-time quote data. The subtext under the title shows how many holdings are included.
@@ -133,6 +128,11 @@ export default function HelpPage() {
         <h3 className="mt-6 text-base font-semibold text-foreground">Live Prices</h3>
         <p className="mt-2 text-muted-foreground">
           Stock prices come from Yahoo Finance via the <code className="rounded bg-muted px-1 py-0.5 text-xs">yahoo-finance2</code> library. No API key is required. All symbols are fetched in a single batch call with no rate limits or daily caps. Prices are cached for 60 seconds.
+        </p>
+
+        <h3 className="mt-6 text-base font-semibold text-foreground">Export CSV</h3>
+        <p className="mt-2 text-muted-foreground">
+          Click <strong>Export CSV</strong> in the header to download all your transactions as a CSV file. This is useful for backing up your data, sharing records with an accountant, or migrating to another tool. The exported file uses the same column format as the batch upload (Transaction Date, Transaction Type, Symbol, Shares, Price per Share, Fees), so you can re-import it later via batch upload — for example, after editing in a spreadsheet.
         </p>
 
         <h2 className="mt-10 text-xl font-semibold text-foreground">Charts</h2>
