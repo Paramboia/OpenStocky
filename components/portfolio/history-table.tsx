@@ -162,11 +162,11 @@ export function HistoryTable() {
                 </button>
               )}
             </div>
-            <div className="flex bg-secondary border border-border rounded-md overflow-hidden w-fit">
+            <div className="flex w-full sm:w-fit bg-secondary border border-border rounded-md overflow-hidden">
               <button
                 type="button"
                 onClick={() => { setStatusFilter("all"); setPage(1) }}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs font-medium transition-colors ${
                   statusFilter === "all"
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -177,7 +177,7 @@ export function HistoryTable() {
               <button
                 type="button"
                 onClick={() => { setStatusFilter("closed"); setPage(1) }}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs font-medium transition-colors ${
                   statusFilter === "closed"
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -188,7 +188,7 @@ export function HistoryTable() {
               <button
                 type="button"
                 onClick={() => { setStatusFilter("partial"); setPage(1) }}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs font-medium transition-colors ${
                   statusFilter === "partial"
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -199,7 +199,7 @@ export function HistoryTable() {
               <button
                 type="button"
                 onClick={() => { setStatusFilter("open"); setPage(1) }}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs font-medium transition-colors ${
                   statusFilter === "open"
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
