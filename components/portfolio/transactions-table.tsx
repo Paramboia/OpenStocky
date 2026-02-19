@@ -35,15 +35,28 @@ export function TransactionsTable() {
   const [rowOffsets, setRowOffsets] = useState<Record<string, number>>({})
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [actionMenuTx, setActionMenuTx] = useState<Transaction | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
   const dragState = useRef({ id: "", startX: 0, startOffset: 0 })
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressTxRef = useRef<Transaction | null>(null)
   const perPage = 15
   const maxSwipeOffset = -160
   const revealThreshold = -8
+  const longPressMs = 3000
 
   useEffect(() => {
     setRows(transactions)
     setPage(1)
   }, [transactions])
+
+  useEffect(() => {
+    const m = window.matchMedia("(max-width: 768px)")
+    setIsMobile(m.matches)
+    const listener = () => setIsMobile(m.matches)
+    m.addEventListener("change", listener)
+    return () => m.removeEventListener("change", listener)
+  }, [])
 
   const filteredTransactions = rows.filter((tx) => {
     const matchesSearch = tx.symbol.toLowerCase().includes(search.toLowerCase())
@@ -114,6 +127,7 @@ export function TransactionsTable() {
     setEditingTransaction(tx)
     setEditDialogOpen(true)
     setRowOffsets((prev) => ({ ...prev, [tx.id]: 0 }))
+    setActionMenuTx(null)
   }
 
   const handleDelete = (id: string) => {
@@ -123,6 +137,36 @@ export function TransactionsTable() {
       delete next[id]
       return next
     })
+    setActionMenuTx(null)
+  }
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+    longPressTxRef.current = null
+  }
+
+  const handleLongPressStart = (tx: Transaction, event: React.PointerEvent) => {
+    if (!isMobile) return
+    longPressTxRef.current = tx
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null
+      const target = longPressTxRef.current
+      longPressTxRef.current = null
+      if (target) setActionMenuTx(target)
+    }, longPressMs)
+  }
+
+  const handleLongPressEnd = () => {
+    if (!isMobile) return
+    clearLongPressTimer()
+  }
+
+  const handleLongPressMove = () => {
+    if (!isMobile) return
+    clearLongPressTimer()
   }
 
   return (
@@ -215,8 +259,9 @@ export function TransactionsTable() {
                 <TableRow key={tx.id} className="border-border">
                   <TableCell colSpan={7} className="p-0">
                     <div className="relative overflow-hidden">
+                      {/* Swipe actions — desktop only */}
                       <div
-                          className="absolute right-0 top-0 bottom-0 flex w-[160px] transition-opacity duration-200"
+                        className="absolute right-0 top-0 bottom-0 hidden w-[160px] transition-opacity duration-200 md:flex"
                         style={{
                           opacity: (rowOffsets[tx.id] ?? 0) <= revealThreshold ? 1 : 0,
                           pointerEvents: (rowOffsets[tx.id] ?? 0) <= maxSwipeOffset ? "auto" : "none",
@@ -244,12 +289,31 @@ export function TransactionsTable() {
                         </button>
                       </div>
                       <div
-                        className="grid grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr_1fr_0.8fr_1fr] items-center gap-0 bg-card px-4 py-4 text-foreground transition-transform duration-200 ease-out hover:bg-secondary/50"
-                        style={{ transform: `translateX(${rowOffsets[tx.id] ?? 0}px)` }}
-                        onPointerDown={(event) => handlePointerDown(tx.id, event)}
-                        onPointerMove={(event) => handlePointerMove(tx.id, event)}
-                        onPointerUp={(event) => handlePointerEnd(tx.id, event)}
-                        onPointerCancel={(event) => handlePointerEnd(tx.id, event)}
+                        className="grid grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr_1fr_0.8fr_1fr] items-center gap-0 bg-card px-4 py-4 text-foreground transition-transform duration-200 ease-out hover:bg-secondary/50 md:transition-transform"
+                        style={
+                          isMobile
+                            ? undefined
+                            : { transform: `translateX(${rowOffsets[tx.id] ?? 0}px)` }
+                        }
+                        onPointerDown={
+                          isMobile
+                            ? (e) => handleLongPressStart(tx, e)
+                            : (e) => handlePointerDown(tx.id, e)
+                        }
+                        onPointerMove={
+                          isMobile
+                            ? handleLongPressMove
+                            : (e) => handlePointerMove(tx.id, e)
+                        }
+                        onPointerUp={
+                          isMobile
+                            ? handleLongPressEnd
+                            : (e) => handlePointerEnd(tx.id, e)
+                        }
+                        onPointerCancel={
+                          isMobile ? handleLongPressEnd : (e) => handlePointerEnd(tx.id, e)
+                        }
+                        onContextMenu={(e) => isMobile && e.preventDefault()}
                       >
                         <div>{formatDate(tx.date)}</div>
                         <div>
@@ -336,6 +400,44 @@ export function TransactionsTable() {
           if (!open) setEditingTransaction(null)
         }}
       />
+
+      {/* Mobile: long-press action popup */}
+      {actionMenuTx && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Transaction actions"
+          onClick={() => setActionMenuTx(null)}
+        >
+          <Card
+            className="w-full max-w-sm border-border bg-card p-4 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-3 text-sm text-muted-foreground">
+              {actionMenuTx.symbol} · {formatDate(actionMenuTx.date)}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1 border-border bg-secondary text-foreground hover:bg-secondary/80"
+                onClick={() => handleEdit(actionMenuTx)}
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => handleDelete(actionMenuTx.id)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </Card>
   )
 }
