@@ -69,7 +69,7 @@ export default function HelpPage() {
             <strong>Short-sell protection:</strong> Sell transactions are clamped so you cannot sell more shares than you currently hold for a given symbol.
           </li>
           <li>
-            <strong>Edit &amp; Delete:</strong> In the Transaction History table, swipe a row left to reveal <strong>Edit</strong> and <strong>Delete</strong> buttons. Tap <strong>Edit</strong> to update any field (date, type, symbol, shares, price, fees); tap <strong>Delete</strong> to remove the transaction. Useful for correcting typos or removing erroneous entries.
+            <strong>Edit &amp; Delete:</strong> In the Transaction History table — <strong>Desktop:</strong> swipe a row left to reveal <strong>Edit</strong> and <strong>Delete</strong> buttons; <strong>Mobile:</strong> long-press (1.5 seconds) on a row to open a popup with Edit and Delete options. Tap <strong>Edit</strong> to update any field (date, type, symbol, shares, price, fees); tap <strong>Delete</strong> to remove the transaction. Useful for correcting typos or removing erroneous entries.
           </li>
         </ul>
 
