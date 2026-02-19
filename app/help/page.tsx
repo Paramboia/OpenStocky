@@ -148,7 +148,7 @@ export default function HelpPage() {
           <div>
             <h3 className="font-semibold text-foreground">Portfolio Allocation</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Donut chart showing the percentage weight of your portfolio. Use the filter to switch views: <strong>Holdings</strong> (top 10 positions by symbol, rest as Other), <strong>Sector</strong> (aggregated by company sector, e.g. Technology, Healthcare), or <strong>Region</strong> (aggregated by company country). Helps visualize concentration and diversification from different angles.
+              Donut chart showing the percentage weight of your portfolio by market value. Switch between three perspectives via the filter: <strong>Holdings</strong> — top 10 positions displayed individually, smaller holdings grouped as &quot;Other&quot;; <strong>Sector</strong> — allocation aggregated by company sector (e.g. Technology, Healthcare); <strong>Region</strong> — allocation aggregated by company country (e.g. United States, China). Helps visualize concentration and diversification at a glance from different angles.
             </p>
           </div>
 
