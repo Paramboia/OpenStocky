@@ -43,7 +43,7 @@ export function TransactionsTable() {
   const perPage = 15
   const maxSwipeOffset = -160
   const revealThreshold = -8
-  const longPressMs = 3000
+  const longPressMs = 1500
 
   useEffect(() => {
     setRows(transactions)
