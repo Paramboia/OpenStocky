@@ -51,11 +51,16 @@ export function TransactionsTable() {
   }, [transactions])
 
   useEffect(() => {
-    const m = window.matchMedia("(max-width: 768px)")
-    setIsMobile(m.matches)
-    const listener = () => setIsMobile(m.matches)
-    m.addEventListener("change", listener)
-    return () => m.removeEventListener("change", listener)
+    const mobileQuery = window.matchMedia("(max-width: 768px)")
+    const coarseQuery = window.matchMedia("(pointer: coarse)")
+    const update = () => setIsMobile(mobileQuery.matches || coarseQuery.matches)
+    update()
+    mobileQuery.addEventListener("change", update)
+    coarseQuery.addEventListener("change", update)
+    return () => {
+      mobileQuery.removeEventListener("change", update)
+      coarseQuery.removeEventListener("change", update)
+    }
   }, [])
 
   const filteredTransactions = rows.filter((tx) => {
@@ -148,8 +153,9 @@ export function TransactionsTable() {
     longPressTxRef.current = null
   }
 
-  const handleLongPressStart = (tx: Transaction, event: React.PointerEvent) => {
+  const handleLongPressStart = (tx: Transaction) => {
     if (!isMobile) return
+    clearLongPressTimer()
     longPressTxRef.current = tx
     longPressTimerRef.current = setTimeout(() => {
       longPressTimerRef.current = null
@@ -297,7 +303,7 @@ export function TransactionsTable() {
                         }
                         onPointerDown={
                           isMobile
-                            ? (e) => handleLongPressStart(tx, e)
+                            ? () => handleLongPressStart(tx)
                             : (e) => handlePointerDown(tx.id, e)
                         }
                         onPointerMove={
@@ -313,6 +319,9 @@ export function TransactionsTable() {
                         onPointerCancel={
                           isMobile ? handleLongPressEnd : (e) => handlePointerEnd(tx.id, e)
                         }
+                        onTouchStart={isMobile ? () => handleLongPressStart(tx) : undefined}
+                        onTouchEnd={isMobile ? handleLongPressEnd : undefined}
+                        onTouchCancel={isMobile ? handleLongPressEnd : undefined}
                         onContextMenu={(e) => isMobile && e.preventDefault()}
                       >
                         <div>{formatDate(tx.date)}</div>
