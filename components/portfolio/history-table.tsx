@@ -139,8 +139,30 @@ export function HistoryTable() {
               )}
             </p>
           </div>
-          <div className="flex gap-2 items-center">
-            <div className="flex bg-secondary border border-border rounded-md overflow-hidden">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:w-52 order-first sm:order-none">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search symbol..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setPage(1)
+                }}
+                className="pl-9 pr-9 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <div className="flex bg-secondary border border-border rounded-md overflow-hidden w-fit">
               <button
                 type="button"
                 onClick={() => { setStatusFilter("all"); setPage(1) }}
@@ -185,28 +207,6 @@ export function HistoryTable() {
               >
                 Open
               </button>
-            </div>
-            <div className="relative w-full sm:w-52">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search symbol..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                  setPage(1)
-                }}
-                className="pl-9 pr-9 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  aria-label="Clear search"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
             </div>
           </div>
         </div>
