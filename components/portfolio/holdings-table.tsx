@@ -45,6 +45,32 @@ function getDualSortNext(
 
 const perPage = 15
 
+function compareSignedPercentThenAmount(
+  aPercent: number,
+  aAmount: number,
+  bPercent: number,
+  bAmount: number,
+  direction: SortDirection,
+) {
+  const mod = direction === "asc" ? -1 : 1
+  const aPositive = aPercent >= 0
+  const bPositive = bPercent >= 0
+
+  if (aPositive !== bPositive) {
+    return aPositive ? -1 * mod : 1 * mod
+  }
+
+  if (aPercent !== bPercent) {
+    return (bPercent - aPercent) * mod
+  }
+
+  if (aAmount !== bAmount) {
+    return (bAmount - aAmount) * mod
+  }
+
+  return 0
+}
+
 export function HoldingsTable() {
   const [search, setSearch] = useState("")
   const [sortKey, setSortKey] = useState<SortKey>("currentValue")
@@ -60,6 +86,26 @@ export function HoldingsTable() {
   )
 
   const sortedHoldings = [...filteredHoldings].sort((a, b) => {
+    if (sortKey === "gainLoss") {
+      return compareSignedPercentThenAmount(
+        a.gainLossPercent,
+        a.gainLoss,
+        b.gainLossPercent,
+        b.gainLoss,
+        sortDirection,
+      )
+    }
+
+    if (sortKey === "totalReturn") {
+      return compareSignedPercentThenAmount(
+        a.totalReturnPercent,
+        a.totalReturn,
+        b.totalReturnPercent,
+        b.totalReturn,
+        sortDirection,
+      )
+    }
+
     const aValue = a[sortKey]
     const bValue = b[sortKey]
     const modifier = sortDirection === "asc" ? 1 : -1
