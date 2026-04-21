@@ -24,6 +24,11 @@ function KpiTooltip({ children, content }: { children: React.ReactNode; content:
   )
 }
 
+function formatSignedPercent(value: number, digits = 1): string {
+  if (Object.is(value, -0)) return `0.${"0".repeat(digits)}%`
+  return `${value >= 0 ? "+" : ""}${value.toFixed(digits)}%`
+}
+
 export function PortfolioHeader() {
   const { prices, betas } = useStockPrices()
   const transactions = useTransactions()
@@ -101,7 +106,7 @@ export function PortfolioHeader() {
                 </p>
                 <p className={`text-xs mt-1 flex items-center gap-1 ${isTotalReturnPositive ? "text-primary" : "text-destructive"}`}>
                   {isTotalReturnPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                  {Math.abs(stats.totalReturnPercent).toFixed(1)}% all time
+                  {formatSignedPercent(stats.totalReturnPercent)} all time
                 </p>
               </div>
             </div>
@@ -125,7 +130,7 @@ export function PortfolioHeader() {
                 </p>
                 <p className={`text-xs mt-1 flex items-center gap-1 ${isPositive ? "text-primary" : "text-destructive"}`}>
                   {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                  {Math.abs(stats.totalGainLossPercent).toFixed(1)}%
+                  {formatSignedPercent(stats.totalGainLossPercent)}
                 </p>
               </div>
             </div>

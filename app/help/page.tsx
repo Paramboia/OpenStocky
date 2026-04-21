@@ -75,7 +75,7 @@ export default function HelpPage() {
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Holdings</h3>
         <p className="mt-2 text-muted-foreground">
-          Holdings are derived from transactions: buys increase shares and cost basis; sells reduce shares and proportionally reduce cost basis (avg cost method). Unrealized P/L = (current price × shares) − total cost. Each holding also displays <strong>Total Return</strong> (unrealized P/L + realized gains from sold shares), computed using FIFO lot matching, so you can see the full picture of each position&apos;s performance. A subtext under the table title shows position count and total portfolio value.
+          Holdings are derived from transactions: buys increase shares and cost basis; sells are matched using FIFO lots. Unrealized P/L = (current price × shares) − remaining FIFO cost basis of the shares still held. Each holding also displays <strong>Total Return</strong> (unrealized P/L + realized gains from sold shares), computed using FIFO lot matching, so you can see the full picture of each position&apos;s performance. A subtext under the table title shows position count and total portfolio value.
         </p>
 
         <h3 className="mt-6 text-base font-semibold text-foreground">Trade History</h3>
@@ -109,7 +109,7 @@ export default function HelpPage() {
         </p>
         <ul className="mt-2 list-disc list-inside space-y-1 text-muted-foreground">
           <li>
-            <strong>1D / 7D / 1M:</strong> Price change (absolute and percentage) over the last 1 day, 7 days, and ~21 calendar days respectively. 7D and 1M are computed from daily historical closing prices.
+            <strong>1D / 7D / 1M:</strong> Price change (absolute and percentage) over the last 1 day, 7 days, and ~21 calendar days respectively. 1D is computed from the previous close; 7D and 1M are computed from daily historical closing prices.
           </li>
           <li>
             <strong>P/E:</strong> Trailing price-to-earnings ratio — current price divided by earnings per share over the last 12 months. Not available for ETFs or companies with negative earnings.
