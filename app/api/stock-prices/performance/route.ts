@@ -14,6 +14,10 @@ interface ChartQuote {
   adjClose?: number | null
 }
 
+function getValidPrice(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null
+}
+
 /**
  * Find the closing price closest to N calendar days ago.
  * Allows up to 5 days of tolerance for weekends / holidays.
@@ -121,6 +125,10 @@ export async function GET(request: Request) {
       if (!q?.regularMarketPrice) continue
 
       const price: number = q.regularMarketPrice
+      const price1D =
+        getValidPrice(q.regularMarketPreviousClose) ??
+        getValidPrice(q.previousClose) ??
+        findPriceNDaysAgo(dailyRows, 1)
       const price7D = findPriceNDaysAgo(dailyRows, 7)
       const price1M = findPriceNDaysAgo(dailyRows, 21)
 
@@ -139,9 +147,9 @@ export async function GET(request: Request) {
         symbol: sym,
         price,
 
-        // 1-day (straight from quote)
-        change1D: q.regularMarketChange ?? 0,
-        changePercent1D: q.regularMarketChangePercent ?? 0,
+        // 1-day (computed from previous close so % and $ remain aligned)
+        change1D: price1D !== null ? price - price1D : 0,
+        changePercent1D: price1D !== null ? ((price - price1D) / price1D) * 100 : 0,
 
         // 7-day (computed)
         change7D: price7D !== null ? price - price7D : null,
