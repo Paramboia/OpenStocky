@@ -494,7 +494,9 @@ export function calculatePortfolioStats(
   
   // 11. Capital Efficiency (current value / total capital ever deployed)
   const capitalEfficiency = totalCapitalDeployed > 0 ? (totalValue / totalCapitalDeployed) * 100 : 0
-  const totalReturnPercent = totalCapitalDeployed > 0 ? (totalReturn / totalCapitalDeployed) * 100 : 0
+
+  // Portfolio total return should reflect profit relative to actual capital still at risk.
+  const totalReturnPercent = netInvested > 0 ? (totalReturn / netInvested) * 100 : 0
   
   // 12. Time in Market (days)
   const daysInMarket = Math.floor((today.getTime() - firstTxDate.getTime()) / (24 * 60 * 60 * 1000))

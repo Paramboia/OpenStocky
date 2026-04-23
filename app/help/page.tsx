@@ -205,7 +205,7 @@ export default function HelpPage() {
           <div>
             <h3 className="font-semibold text-foreground">Total Return</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Unrealized P/L + Realized P/L. Total profit or loss across all positions (open and closed).
+              Unrealized P/L + Realized P/L. Total profit or loss across all positions (open and closed). The portfolio-level percentage shown on the dashboard is total return ÷ net invested, where net invested = total buys − total sell proceeds.
             </p>
           </div>
 
