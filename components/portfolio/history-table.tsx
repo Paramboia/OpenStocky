@@ -44,6 +44,46 @@ function getDualSortNext(
 
 const perPage = 15
 
+type RealizedSortMetric = {
+  percent: number | null
+  amount: number | null
+}
+
+function compareSignedPercentThenAmount(
+  aMetric: RealizedSortMetric,
+  bMetric: RealizedSortMetric,
+  direction: SortDirection,
+) {
+  const { percent: aPercent, amount: aAmount } = aMetric
+  const { percent: bPercent, amount: bAmount } = bMetric
+
+  if (aPercent === null && bPercent === null) return 0
+  if (aPercent === null) return 1
+  if (bPercent === null) return -1
+
+  const mod = direction === "asc" ? -1 : 1
+  const aPositive = aPercent >= 0
+  const bPositive = bPercent >= 0
+
+  if (aPositive !== bPositive) {
+    return aPositive ? -1 * mod : 1 * mod
+  }
+
+  if (aPercent !== bPercent) {
+    return (bPercent - aPercent) * mod
+  }
+
+  if (aAmount === null && bAmount === null) return 0
+  if (aAmount === null) return 1
+  if (bAmount === null) return -1
+
+  if (aAmount !== bAmount) {
+    return (bAmount - aAmount) * mod
+  }
+
+  return 0
+}
+
 function formatDuration(days: number): string {
   if (days < 1) return "<1d"
   if (days < 30) return `${days}d`
@@ -72,6 +112,20 @@ export function HistoryTable() {
     .filter((p) => statusFilter === "all" || p.status === statusFilter)
 
   const sortedPositions = [...filteredPositions].sort((a, b) => {
+    if (sortKey === "realizedPnL") {
+      return compareSignedPercentThenAmount(
+        {
+          percent: a.status === "open" ? null : a.realizedReturnPercent,
+          amount: a.status === "open" ? null : a.realizedPnL,
+        },
+        {
+          percent: b.status === "open" ? null : b.realizedReturnPercent,
+          amount: b.status === "open" ? null : b.realizedPnL,
+        },
+        sortDirection,
+      )
+    }
+
     const aValue = a[sortKey]
     const bValue = b[sortKey]
     const modifier = sortDirection === "asc" ? 1 : -1
