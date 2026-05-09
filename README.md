@@ -54,8 +54,8 @@ OpenStocky lets you track buy/sell transactions, compute holdings, view performa
 - **Transactions table** — Paginated list, search by symbol, filter by buy/sell, swipe-to-delete on mobile. Subtext shows transaction count.
 - **Portfolio Growth chart** — Area chart of net invested vs portfolio value over the last 24 months, using actual monthly closing prices from Yahoo Finance
 - **Allocation chart** — Donut chart of portfolio weights (top 10 holdings + "Other")
-- **P/L Attribution chart** — Horizontal bar chart of each position's total return (unrealized + realized), sorted best to worst
-- **Weight vs Return chart** — Scatter/bubble plot: portfolio weight vs total return %, sized by position value
+- **P/L Attribution chart** — Horizontal bar chart of each position's total return (unrealized + realized), with All / Closed / Open views
+- **Weight vs Return chart** — Scatter/bubble plot: portfolio weight or trade size vs total return %, with All / Closed / Open views
 - **Info tooltips** — Every chart title has an (i) icon explaining how to read it
 
 ---

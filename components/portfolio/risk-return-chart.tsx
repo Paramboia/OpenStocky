@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import {
   ScatterChart,
   Scatter,
@@ -16,7 +16,9 @@ import {
 import { Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { calculateHoldings } from "@/lib/portfolio-data"
+import { PositionChartFilter } from "@/components/portfolio/position-chart-filter"
+import { buildPositionChartData, type PositionChartView } from "@/components/portfolio/position-chart-data"
+import { calculateClosedPositions, calculateHoldings } from "@/lib/portfolio-data"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { useTransactions } from "@/lib/transactions-store"
 
@@ -24,25 +26,29 @@ const GREEN = "hsl(142, 76%, 46%)"
 const RED = "hsl(0, 72%, 51%)"
 
 export function RiskReturnChart() {
+  const [positionView, setPositionView] = useState<PositionChartView>("open")
   const { prices } = useStockPrices()
   const transactions = useTransactions()
   const holdings = calculateHoldings(prices, transactions)
-
-  const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0)
+  const positions = calculateClosedPositions(transactions)
 
   const chartData = useMemo(() => {
+    const positionData = buildPositionChartData(holdings, positions, positionView)
+    const totalValue = positionData.reduce((sum, position) => sum + position.value, 0)
+
     if (totalValue === 0) return []
 
-    return holdings.map((h) => ({
-      symbol: h.symbol,
-      weight: (h.currentValue / totalValue) * 100,
-      returnPct: h.totalReturnPercent,
-      value: h.currentValue,
-      totalReturn: h.totalReturn,
-      unrealized: h.gainLoss,
-      realized: h.realizedGainLoss,
+    return positionData.map((position) => ({
+      symbol: position.symbol,
+      status: position.status,
+      weight: (position.value / totalValue) * 100,
+      returnPct: position.totalReturnPercent,
+      value: position.value,
+      totalReturn: position.totalReturn,
+      unrealized: position.unrealized,
+      realized: position.realized,
     }))
-  }, [holdings, totalValue])
+  }, [holdings, positions, positionView])
 
   // Range for Z-axis (bubble size)
   const values = chartData.map((d) => d.value)
@@ -54,16 +60,20 @@ export function RiskReturnChart() {
     payload,
   }: {
     active?: boolean
-    payload?: { payload: { symbol: string; weight: number; returnPct: number; value: number; totalReturn: number; unrealized: number; realized: number } }[]
+    payload?: { payload: { symbol: string; status: string; weight: number; returnPct: number; value: number; totalReturn: number; unrealized: number; realized: number } }[]
   }) => {
     if (active && payload && payload.length) {
       const d = payload[0].payload
       const isPositive = d.totalReturn >= 0
+      const statusLabel = d.status.charAt(0).toUpperCase() + d.status.slice(1)
+      const weightLabel = positionView === "open" ? "Weight" : "Size"
+      const valueLabel = positionView === "open" ? "Value" : d.status === "closed" ? "Closed Size" : "Value"
       return (
         <div className="rounded-lg border border-border bg-card p-3 shadow-lg">
           <p className="font-semibold text-foreground">{d.symbol}</p>
+          <p className="text-xs text-muted-foreground">{statusLabel}</p>
           <p className="text-muted-foreground text-sm">
-            Weight: {d.weight.toFixed(1)}%
+            {weightLabel}: {d.weight.toFixed(1)}%
           </p>
           <p className={`text-sm ${isPositive ? "text-primary" : "text-destructive"}`}>
             Total Return: {isPositive ? "+" : ""}$
@@ -71,12 +81,14 @@ export function RiskReturnChart() {
             {" "}({isPositive ? "+" : ""}{d.returnPct.toFixed(1)}%)
           </p>
           <p className="text-muted-foreground text-sm">
-            Value: $
+            {valueLabel}: $
             {Math.round(d.value).toLocaleString("en-US")}
           </p>
-          {d.realized !== 0 && (
+          {(d.realized !== 0 || d.status === "closed") && (
             <div className="mt-1.5 border-t border-border pt-1.5 text-xs text-muted-foreground">
-              <p>Unrealized: {d.unrealized >= 0 ? "+" : ""}${Math.round(d.unrealized).toLocaleString("en-US")}</p>
+              {d.status !== "closed" && (
+                <p>Unrealized: {d.unrealized >= 0 ? "+" : ""}${Math.round(d.unrealized).toLocaleString("en-US")}</p>
+              )}
               <p>Realized: {d.realized >= 0 ? "+" : ""}${Math.round(d.realized).toLocaleString("en-US")}</p>
             </div>
           )}
@@ -95,14 +107,24 @@ export function RiskReturnChart() {
             <Info className="h-4 w-4 text-muted-foreground cursor-help" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
-            <p className="text-sm">Scatter plot of each position: x-axis is portfolio weight (allocation), y-axis is total return % (unrealized + realized). Bubble size reflects position value. Positions in the top-right are large and profitable; bottom-right are large losers that may need attention.</p>
+            <p className="text-sm">
+              {positionView === "open" && "Scatter plot of positions still held today: x-axis is current portfolio weight, y-axis is total return %, and bubble size reflects position value."}
+              {positionView === "closed" && "Scatter plot of fully closed positions: x-axis and bubble size reflect closed trade size, while y-axis shows realized return %."}
+              {positionView === "all" && "Scatter plot of current positions plus fully closed positions. Current positions use market value; closed positions use closed trade size."}
+            </p>
           </TooltipContent>
         </UiTooltip>
       </TooltipProvider>
     </CardTitle>
   )
 
-  if (holdings.length === 0) {
+  const axisLabel = positionView === "open" ? "Portfolio Weight %" : positionView === "closed" ? "Closed Trade Size %" : "Position Size %"
+  const sizeLegend = positionView === "open" ? "Bubble size = position value" : positionView === "closed" ? "Bubble size = closed trade size" : "Bubble size = current value / closed trade size"
+  const filter = positions.length > 0 ? (
+    <PositionChartFilter value={positionView} onChange={setPositionView} />
+  ) : null
+
+  if (positions.length === 0) {
     return (
       <Card className="bg-card border-border">
         <CardHeader>{chartTitle}</CardHeader>
@@ -115,9 +137,28 @@ export function RiskReturnChart() {
     )
   }
 
+  if (chartData.length === 0) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="order-first sm:order-none">{chartTitle}</div>
+          <div className="order-last sm:order-none w-full sm:w-auto">{filter}</div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex h-80 items-center justify-center text-muted-foreground">
+            No {positionView} positions to show
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="bg-card border-border">
-      <CardHeader>{chartTitle}</CardHeader>
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="order-first sm:order-none">{chartTitle}</div>
+        <div className="order-last sm:order-none w-full sm:w-auto">{filter}</div>
+      </CardHeader>
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
@@ -136,7 +177,7 @@ export function RiskReturnChart() {
                 tickLine={{ stroke: "hsl(240, 6%, 16%)" }}
                 axisLine={{ stroke: "hsl(240, 6%, 16%)" }}
                 label={{
-                  value: "Portfolio Weight %",
+                  value: axisLabel,
                   position: "insideBottom",
                   offset: -5,
                   fill: "hsl(240, 5%, 55%)",
@@ -182,7 +223,7 @@ export function RiskReturnChart() {
           </ResponsiveContainer>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
-          <span className="text-xs text-muted-foreground">Bubble size = position value</span>
+          <span className="text-xs text-muted-foreground">{sizeLegend}</span>
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: GREEN }} />
             <span className="text-sm text-muted-foreground">Positive return</span>
