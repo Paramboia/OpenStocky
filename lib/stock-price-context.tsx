@@ -122,7 +122,21 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
   const { filteredPrices, staleSymbols } = useMemo(() => {
     const next: Record<string, number> = {}
     const stale: string[] = []
-    if (!data?.prices || symbols.length === 0) return { filteredPrices: next, staleSymbols: stale }
+    if (symbols.length === 0) return { filteredPrices: next, staleSymbols: stale }
+
+    // Whole request failed with no data — every symbol falls back to its last known price
+    if (!data?.prices) {
+      if (error) {
+        for (const symbol of symbols) {
+          stale.push(symbol)
+          if (lastKnownPrices[symbol] !== undefined) {
+            next[symbol] = lastKnownPrices[symbol]
+          }
+        }
+      }
+      return { filteredPrices: next, staleSymbols: stale }
+    }
+
     for (const symbol of symbols) {
       if (data.prices[symbol] !== undefined) {
         next[symbol] = data.prices[symbol]
@@ -135,7 +149,7 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
       }
     }
     return { filteredPrices: next, staleSymbols: stale }
-  }, [data?.prices, symbols, lastKnownPrices])
+  }, [data?.prices, error, symbols, lastKnownPrices])
 
   const filteredBetas = useMemo(() => {
     if (!data?.betas || symbols.length === 0) return {}
