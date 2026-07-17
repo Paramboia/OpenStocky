@@ -16,6 +16,7 @@ import {
 import { calculateHoldings, type Holding } from "@/lib/portfolio-data"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { useTransactions } from "@/lib/transactions-store"
+import { StalePriceWarning } from "@/components/portfolio/stale-price-warning"
 
 type SortKey = keyof Holding
 type SortDirection = "asc" | "desc"
@@ -51,9 +52,10 @@ export function HoldingsTable() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
   const [page, setPage] = useState(1)
 
-  const { prices } = useStockPrices()
+  const { prices, staleSymbols } = useStockPrices()
   const transactions = useTransactions()
   const holdings = calculateHoldings(prices, transactions)
+  const staleSet = new Set(staleSymbols)
 
   const filteredHoldings = holdings.filter((h) =>
     h.symbol.toLowerCase().includes(search.toLowerCase())
@@ -227,7 +229,12 @@ export function HoldingsTable() {
 
                 return (
                   <TableRow key={holding.symbol} className="border-border hover:bg-secondary/50">
-                    <TableCell className="font-semibold text-foreground">{holding.symbol}</TableCell>
+                    <TableCell className="font-semibold text-foreground">
+                      <div className="flex items-center gap-1.5">
+                        {holding.symbol}
+                        {staleSet.has(holding.symbol) && <StalePriceWarning />}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right text-foreground">
                       {holding.shares.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>

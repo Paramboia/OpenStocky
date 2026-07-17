@@ -18,14 +18,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { calculateHoldings } from "@/lib/portfolio-data"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { useTransactions } from "@/lib/transactions-store"
+import { StalePriceWarning } from "@/components/portfolio/stale-price-warning"
 
 /* ---------- Types ---------- */
 
 interface PerformanceEntry {
   symbol: string
-  price: number
-  change1D: number
-  changePercent1D: number
+  price: number | null
+  change1D: number | null
+  changePercent1D: number | null
   change7D: number | null
   changePercent7D: number | null
   change1M: number | null
@@ -36,6 +37,8 @@ interface PerformanceEntry {
   fiftyTwoWeekPosition: number | null
   marketCap: number | null
   dividendYield: number | null
+  /** True when the performance fetch failed and this row is a last-known-price fallback. */
+  stale?: boolean
 }
 
 type SortKey = keyof PerformanceEntry
@@ -181,8 +184,33 @@ export function MarketPerformanceTable() {
 
   const rows: PerformanceEntry[] = useMemo(() => {
     if (!data?.performance) return []
-    return Object.values(data.performance) as PerformanceEntry[]
-  }, [data])
+    const entries = Object.values(data.performance) as PerformanceEntry[]
+    const fetched = new Set(entries.map((e) => e.symbol))
+
+    // Symbols the performance API failed to fetch still get a row, using the
+    // last price we have (live or persisted fallback) and a stale marker.
+    for (const symbol of symbols) {
+      if (fetched.has(symbol)) continue
+      entries.push({
+        symbol,
+        price: prices[symbol] ?? null,
+        change1D: null,
+        changePercent1D: null,
+        change7D: null,
+        changePercent7D: null,
+        change1M: null,
+        changePercent1M: null,
+        trailingPE: null,
+        fiftyTwoWeekHigh: null,
+        fiftyTwoWeekLow: null,
+        fiftyTwoWeekPosition: null,
+        marketCap: null,
+        dividendYield: null,
+        stale: true,
+      })
+    }
+    return entries
+  }, [data, symbols, prices])
 
   const filtered = rows.filter((r) => r.symbol.toLowerCase().includes(search.toLowerCase()))
 
@@ -316,11 +344,18 @@ export function MarketPerformanceTable() {
                     return (
                       <TableRow key={s.symbol} className="border-border hover:bg-secondary/50">
                         {/* Symbol */}
-                        <TableCell className="font-semibold text-foreground">{s.symbol}</TableCell>
+                        <TableCell className="font-semibold text-foreground">
+                          <div className="flex items-center gap-1.5">
+                            {s.symbol}
+                            {s.stale && <StalePriceWarning />}
+                          </div>
+                        </TableCell>
 
                         {/* Price */}
                         <TableCell className="text-right text-foreground">
-                          ${s.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {s.price !== null
+                            ? `$${s.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : <span className="text-muted-foreground">—</span>}
                         </TableCell>
 
                         {/* 1D */}

@@ -1,16 +1,39 @@
 "use client"
 
-import { createContext, useContext, useCallback, useMemo, type ReactNode } from "react"
+import { createContext, useContext, useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
 import useSWR, { useSWRConfig } from "swr"
 import { useTransactions } from "@/lib/transactions-store"
 
 interface StockPriceContextType {
   prices: Record<string, number>
   betas: Record<string, number>
+  /** Symbols whose latest fetch failed — their price (if any) is a stale fallback. */
+  staleSymbols: string[]
   isLoading: boolean
   isError: boolean
   lastUpdated: string | null
   refresh: () => void
+}
+
+const LAST_KNOWN_PRICES_KEY = "openstocky:last-known-prices"
+
+function loadLastKnownPrices(): Record<string, number> {
+  if (typeof window === "undefined") return {}
+  try {
+    const raw = window.localStorage.getItem(LAST_KNOWN_PRICES_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== "object") return {}
+    const result: Record<string, number> = {}
+    for (const [symbol, price] of Object.entries(parsed)) {
+      if (typeof price === "number" && Number.isFinite(price) && price > 0) {
+        result[symbol] = price
+      }
+    }
+    return result
+  } catch {
+    return {}
+  }
 }
 
 const StockPriceContext = createContext<StockPriceContextType | null>(null)
@@ -71,16 +94,48 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
     )
   }, [mutate, globalMutate])
 
-  const filteredPrices = useMemo(() => {
-    if (!data?.prices || symbols.length === 0) return {}
+  // Last successfully fetched price per symbol, persisted so we can fall back
+  // when Yahoo silently drops symbols from a batch response.
+  const [lastKnownPrices, setLastKnownPrices] = useState<Record<string, number>>(loadLastKnownPrices)
+
+  useEffect(() => {
+    if (!data?.prices) return
+    setLastKnownPrices((prev) => {
+      let changed = false
+      const next = { ...prev }
+      for (const [symbol, price] of Object.entries(data.prices as Record<string, number>)) {
+        if (typeof price === "number" && Number.isFinite(price) && price > 0 && next[symbol] !== price) {
+          next[symbol] = price
+          changed = true
+        }
+      }
+      if (!changed) return prev
+      try {
+        window.localStorage.setItem(LAST_KNOWN_PRICES_KEY, JSON.stringify(next))
+      } catch {
+        // localStorage unavailable (private mode / quota) — fallback still works in-memory
+      }
+      return next
+    })
+  }, [data?.prices])
+
+  const { filteredPrices, staleSymbols } = useMemo(() => {
     const next: Record<string, number> = {}
+    const stale: string[] = []
+    if (!data?.prices || symbols.length === 0) return { filteredPrices: next, staleSymbols: stale }
     for (const symbol of symbols) {
       if (data.prices[symbol] !== undefined) {
         next[symbol] = data.prices[symbol]
+      } else {
+        // Fetch failed for this symbol — fall back to the last known price
+        stale.push(symbol)
+        if (lastKnownPrices[symbol] !== undefined) {
+          next[symbol] = lastKnownPrices[symbol]
+        }
       }
     }
-    return next
-  }, [data?.prices, symbols])
+    return { filteredPrices: next, staleSymbols: stale }
+  }, [data?.prices, symbols, lastKnownPrices])
 
   const filteredBetas = useMemo(() => {
     if (!data?.betas || symbols.length === 0) return {}
@@ -96,6 +151,7 @@ export function StockPriceProvider({ children }: { children: ReactNode }) {
   const value: StockPriceContextType = {
     prices: filteredPrices,
     betas: filteredBetas,
+    staleSymbols,
     isLoading,
     isError: !!error,
     lastUpdated: data?.lastUpdated || null,
