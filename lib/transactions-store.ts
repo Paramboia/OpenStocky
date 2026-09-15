@@ -1,53 +1,58 @@
 "use client"
 
 import { useSyncExternalStore } from "react"
-import { transactions as seedTransactions, type Transaction } from "@/lib/portfolio-data"
+import type { Transaction } from "@/lib/portfolio-data"
+import { createTransactionStore, TRANSACTIONS_STORAGE_KEY } from "@/lib/transaction-storage"
 
-let currentTransactions = [...seedTransactions]
-const listeners = new Set<() => void>()
+const store = createTransactionStore(() => window.localStorage)
+let subscriberCount = 0
 
-const notify = () => {
-  for (const listener of listeners) {
-    listener()
+function reportError(error: unknown) {
+  window.alert(error instanceof Error ? error.message : "Your portfolio could not be saved.")
+}
+
+function mutate(action: () => void): boolean {
+  try {
+    action()
+    return true
+  } catch (error) {
+    reportError(error)
+    return false
   }
 }
 
-export const getTransactions = () => currentTransactions
-
-export const setTransactions = (next: Transaction[]) => {
-  currentTransactions = [...next]
-  notify()
+function reload() {
+  try {
+    store.reload()
+  } catch (error) {
+    reportError(error)
+  }
 }
 
-export const addTransactions = (next: Transaction[]) => {
-  currentTransactions = [...currentTransactions, ...next]
-  notify()
+function onStorage(event: StorageEvent) {
+  if (event.storageArea === window.localStorage &&
+      (event.key === TRANSACTIONS_STORAGE_KEY || event.key === null)) reload()
 }
 
-export const updateTransaction = (id: string, patch: Partial<Omit<Transaction, "id">>) => {
-  const index = currentTransactions.findIndex((tx) => tx.id === id)
-  if (index === -1) return
-  currentTransactions = [
-    ...currentTransactions.slice(0, index),
-    { ...currentTransactions[index], ...patch },
-    ...currentTransactions.slice(index + 1),
-  ]
-  notify()
-}
-
-export const removeTransaction = (id: string) => {
-  currentTransactions = currentTransactions.filter((tx) => tx.id !== id)
-  notify()
-}
+export const getTransactions = store.getSnapshot
+export const setTransactions = (next: Transaction[]) => mutate(() => store.set(next))
+export const addTransactions = (next: Transaction[]) => mutate(() => store.add(next))
+export const updateTransaction = (id: string, patch: Partial<Omit<Transaction, "id">>) =>
+  mutate(() => store.update(id, patch))
+export const removeTransaction = (id: string) => mutate(() => store.remove(id))
+export const clearTransactions = () => mutate(() => store.clear())
 
 export const subscribeToTransactions = (listener: () => void) => {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+  const unsubscribe = store.subscribe(listener)
+  if (subscriberCount++ === 0) {
+    window.addEventListener("storage", onStorage)
+    reload()
+  }
+  return () => {
+    unsubscribe()
+    if (--subscriberCount === 0) window.removeEventListener("storage", onStorage)
+  }
 }
 
 export const useTransactions = () =>
-  useSyncExternalStore(
-    subscribeToTransactions,
-    getTransactions,
-    getTransactions,
-  )
+  useSyncExternalStore(subscribeToTransactions, getTransactions, store.getServerSnapshot)

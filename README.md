@@ -8,7 +8,7 @@
 
 ## Overview
 
-OpenStocky lets you track buy/sell transactions, compute holdings, view performance metrics, and analyze portfolio allocation. All data lives in memory during your session — refresh the page and it resets. This design prioritizes **privacy and simplicity**: no backend storage, no user accounts, no data collection.
+OpenStocky lets you track buy/sell transactions, compute holdings, view performance metrics, and analyze portfolio allocation. Transactions are saved in localStorage and restored after refreshing or reopening the same site in the same browser profile. This design prioritizes **privacy and simplicity**: no backend storage, no user accounts, no data collection.
 
 ---
 
@@ -110,7 +110,7 @@ OpenStocky/
 ├── lib/
 │   ├── portfolio-data.ts           # Holdings, stats, IRR, KPIs, FIFO
 │   ├── stock-price-context.tsx     # SWR + React context for prices
-│   ├── transactions-store.ts       # In-memory transaction store
+│   ├── transactions-store.ts       # Persistent browser transaction store
 │   └── utils.ts
 └── public/
 ```
@@ -278,7 +278,7 @@ Click **Export CSV** in the header to download all transactions. The exported fi
 
 ## Data & Privacy
 
-- **No persistence** — All transactions and holdings exist only in memory. A refresh clears everything.
+- **Browser persistence** — Transactions are saved locally for this site and browser profile; holdings are derived from them. Data survives refreshes and browser restarts, but does not sync between devices, profiles, or hostnames.
 - **No auth** — No accounts, passwords, or user profiles.
 - **Analytics** — The site uses Google Tag Manager and Google Analytics to track anonymous traffic and usage metrics. No personal or financial data is collected.
 - **Self-hosted** — Deploy on your own infrastructure for full control.
@@ -287,7 +287,7 @@ Click **Export CSV** in the header to download all transactions. The exported fi
 
 ## Limitations
 
-1. **Session-only data** — Refreshing or closing the tab wipes all transactions. Use Export CSV to back up and batch upload to reimport.
+1. **Local-only data** — Clearing site storage or confirming Clear portfolio removes saved transactions. Use Export CSV to back up and batch upload to reimport. Private browsing storage is temporary.
 2. **Yahoo Finance (unofficial)** — The `yahoo-finance2` library uses Yahoo's unofficial API. While the community has kept it working since 2013, Yahoo may change their endpoints at any time.
 3. **US equities focus** — Yahoo Finance supports global symbols, but ticker validation is tuned for common US conventions.
 4. **Historical performance** — The growth chart uses monthly closing prices from Yahoo Finance for the last 24 months. Months without historical data fall back to the nearest available price or cost basis.

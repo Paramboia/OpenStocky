@@ -53,14 +53,14 @@ export default function AboutUsPage() {
 
         <h2 className="mt-8 text-xl font-semibold text-foreground">How it works</h2>
         <p className="mt-2 text-muted-foreground">
-          All data lives in memory during your session — refreshing the page resets it. This design
-          prioritizes privacy and simplicity: no backend storage, no user accounts, no data
-          collection. Your financial data never leaves your device.
+          Your transactions are saved in this browser and restored when you return. No account or
+          database is required. Data does not sync between devices or browsers. Export a CSV for
+          backup; clearing site storage or using Clear portfolio removes your saved transactions.
         </p>
 
         <h2 className="mt-8 text-xl font-semibold text-foreground">Features</h2>
         <ul className="mt-2 list-disc list-inside space-y-1 text-muted-foreground">
-          <li>In-memory storage — no account or database required</li>
+          <li>Browser storage — no account or database required</li>
           <li>Single and batch transaction entry (CSV from Excel)</li>
           <li>Export transactions to CSV for backup and re-import</li>
           <li>Live stock prices via Yahoo Finance — no API key needed</li>

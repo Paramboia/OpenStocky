@@ -136,7 +136,7 @@ export function TransactionsTable() {
   }
 
   const handleDelete = (id: string) => {
-    removeTransaction(id)
+    if (!removeTransaction(id)) return
     setRowOffsets((prev) => {
       const next = { ...prev }
       delete next[id]

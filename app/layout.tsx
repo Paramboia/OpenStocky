@@ -139,7 +139,7 @@ const jsonLd = {
     priceCurrency: "USD",
   },
   featureList: [
-    "In-memory portfolio storage — no account or database required",
+    "Local browser portfolio storage — no account or database required",
     "Single and batch transaction entry",
     "Live stock prices via Yahoo Finance",
     "IRR, CAGR, Sharpe ratio, volatility, win rate",

@@ -70,20 +70,20 @@ export function AddTransactionDialog({ trigger }: AddTransactionDialogProps) {
       transactionCost: total,
     }
 
-    addTransactions([
+    if (!addTransactions([
       {
         ...newTransaction,
         id: typeof crypto !== "undefined" && "randomUUID" in crypto
           ? crypto.randomUUID()
           : `${Date.now()}`,
       },
-    ])
+    ])) return
 
-    // For now, log the transaction - in a real app you'd save this to a database
+    // The transaction is now saved in this browser.
     console.log("[v0] New transaction to add:", newTransaction)
     
     // Show the transaction data that would be added
-    alert(`Transaction created!\n\n${formData.type.toUpperCase()} ${shares} shares of ${formData.symbol.toUpperCase()}\nPrice: $${price.toFixed(2)}\nFees: $${fees.toFixed(2)}\nTotal: $${total.toFixed(2)}\n\nData is stored in session memory and will reset when the browser tab is closed or refreshed.`)
+    alert(`Transaction created!\n\n${formData.type.toUpperCase()} ${shares} shares of ${formData.symbol.toUpperCase()}\nPrice: $${price.toFixed(2)}\nFees: $${fees.toFixed(2)}\nTotal: $${total.toFixed(2)}\n\nYour portfolio is saved in this browser and will be restored when you return.`)
     
     // Reset form and close dialog
     setFormData({

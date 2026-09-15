@@ -151,9 +151,9 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
     setError(null)
 
     if (mode === "override") {
-      setTransactions(parsedTransactions)
+      if (!setTransactions(parsedTransactions)) return
     } else {
-      addTransactions(parsedTransactions)
+      if (!addTransactions(parsedTransactions)) return
     }
 
     console.log("[v0] Batch import request:", {
@@ -165,7 +165,7 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
     alert(
       `Batch import complete!\n\nMode: ${
         mode === "override" ? "Override database" : "Add to database"
-      }\nRows detected: ${rows.length}\n\nData is stored in session memory and will reset when the browser tab is closed or refreshed.`,
+      }\nRows detected: ${rows.length}\n\nYour portfolio is saved in this browser and will be restored when you return.`,
     )
 
     setCsvText("")

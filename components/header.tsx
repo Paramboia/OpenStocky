@@ -9,6 +9,7 @@ import { calculatePortfolioStats } from "@/lib/portfolio-data"
 import { useTransactions } from "@/lib/transactions-store"
 import { AddTransactionDialog } from "@/components/portfolio/add-transaction-dialog"
 import { AddBatchDialog } from "@/components/portfolio/add-batch-dialog"
+import { ClearPortfolioDialog } from "@/components/portfolio/clear-portfolio-dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 export function Header() {
@@ -117,6 +118,7 @@ export function Header() {
           </Button>
           <AddBatchDialog />
           <AddTransactionDialog />
+          <ClearPortfolioDialog />
           <ThemeToggle />
         </div>
       </div>

@@ -77,7 +77,7 @@ export function EditTransactionDialog({
         ? shares * price + fees
         : shares * price - fees
 
-    updateTransaction(transaction.id, {
+    if (!updateTransaction(transaction.id, {
       date: formData.date,
       type: formData.type,
       symbol: formData.symbol.trim().toUpperCase(),
@@ -85,7 +85,7 @@ export function EditTransactionDialog({
       pricePerShare: price,
       fees,
       transactionCost: total,
-    })
+    })) return
 
     onOpenChange(false)
   }

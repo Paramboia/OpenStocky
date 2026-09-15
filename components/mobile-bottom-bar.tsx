@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { RefreshCw, Download, FileSpreadsheet, Plus, Moon, Sun, BookOpen, Info } from "lucide-react"
+import { RefreshCw, Download, FileSpreadsheet, Plus, Moon, Sun, BookOpen, Info, Trash2 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { useTransactions } from "@/lib/transactions-store"
 import { AddTransactionDialog } from "@/components/portfolio/add-transaction-dialog"
+import { ClearPortfolioDialog } from "@/components/portfolio/clear-portfolio-dialog"
 import { AddBatchDialog } from "@/components/portfolio/add-batch-dialog"
 
 export function MobileBottomBar() {
@@ -99,6 +100,19 @@ export function MobileBottomBar() {
               >
                 <FileSpreadsheet className="h-5 w-5" />
                 <span className="text-[10px] font-medium leading-tight">Batch</span>
+              </button>
+            }
+          />
+
+          <ClearPortfolioDialog
+            trigger={
+              <button
+                type="button"
+                className="flex flex-1 flex-col items-center gap-0.5 py-1 text-muted-foreground transition-colors hover:text-destructive"
+                aria-label="Clear portfolio"
+              >
+                <Trash2 className="h-5 w-5" />
+                <span className="text-[10px] font-medium leading-tight">Clear</span>
               </button>
             }
           />
