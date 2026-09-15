@@ -18,6 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { addTransactions, setTransactions } from "@/lib/transactions-store"
 import type { Transaction } from "@/lib/portfolio-data"
+import { normalizeTransactionDate } from "@/lib/transaction-date"
 
 const requiredHeaders = [
   "Transaction Date",
@@ -118,10 +119,11 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
   }
 
   const parseTransactionRow = (line: string, index: number): Transaction | null => {
-    const [date, rawType, symbol, rawShares, rawPrice, rawFees] = line
+    const [rawDate, rawType, symbol, rawShares, rawPrice, rawFees] = line
       .split(/,|\t/)
       .map((value) => value.trim())
 
+    const date = normalizeTransactionDate(rawDate)
     const normalizedType = rawType?.toLowerCase()
     if (!date || (normalizedType !== "buy" && normalizedType !== "sell")) {
       return null
@@ -193,7 +195,7 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
 
     if (parsedTransactions.length !== rows.length) {
       setError(
-        "One or more rows are invalid. Please check dates, types (buy/sell), and numeric values.",
+        "One or more rows are invalid. Use dates in YYYY-MM-DD or M/D/YYYY format, types buy/sell, and numeric amounts.",
       )
       return
     }
