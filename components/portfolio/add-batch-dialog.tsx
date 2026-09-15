@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { FileSpreadsheet, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -47,6 +47,55 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
   const [csvText, setCsvText] = useState("")
   const [mode, setMode] = useState<"override" | "append">("append")
   const [error, setError] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [readingFile, setReadingFile] = useState(false)
+  const [fileName, setFileName] = useState("")
+  const fileInput = useRef<HTMLInputElement>(null)
+  const fileReadId = useRef(0)
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen)
+    if (!nextOpen) {
+      fileReadId.current++
+      setReadingFile(false)
+      setIsDragging(false)
+    }
+  }
+
+  const loadFiles = async (files: FileList | null) => {
+    if (!files?.length) return
+    const readId = ++fileReadId.current
+    setReadingFile(false)
+    setError(null)
+    if (files.length !== 1) {
+      setError("Please choose or drop one CSV file at a time.")
+      return
+    }
+    const file = files[0]
+    if (!/\.csv$/i.test(file.name)) {
+      setError("Please choose a .csv file. Export Excel workbooks as CSV first.")
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("This file is too large. Choose a CSV file smaller than 5 MB.")
+      return
+    }
+    setReadingFile(true)
+    try {
+      const text = (await file.text()).replace(/^\uFEFF/, "")
+      if (readId !== fileReadId.current) return
+      if (!text.trim()) {
+        setError("This CSV file is empty. Choose a file containing transactions.")
+        return
+      }
+      setCsvText(text)
+      setFileName(file.name)
+    } catch {
+      if (readId === fileReadId.current) setError("Could not read this file. Try again or paste its contents.")
+    } finally {
+      if (readId === fileReadId.current) setReadingFile(false)
+    }
+  }
 
   const parsedLines = useMemo(() => {
     return csvText
@@ -110,9 +159,10 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
+    if (readingFile) return
 
     if (!parsedHeaders) {
-      setError("Please paste at least one transaction row.")
+      setError("Please paste data or choose a CSV file containing transactions.")
       return
     }
 
@@ -170,11 +220,12 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
 
     setCsvText("")
     setMode("append")
-    setOpen(false)
+    setFileName("")
+    handleOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="secondary">
@@ -183,14 +234,14 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-card border-border text-foreground sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto bg-card border-border text-foreground sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-foreground">
             Add Batch Transactions
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Paste CSV data from Excel using the required columns. Calculated
-            columns will be derived automatically.
+            Drop a CSV file or paste data from Excel using the required columns.
+            Review the data below, then import. Calculated columns are derived automatically.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -210,14 +261,52 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
               placeholder={`Transaction Date,Transaction Type,Symbol,Shares,Price per Share,Fees\n2024-06-01,Buy,AAPL,10,185.12,1.00`}
               value={csvText}
               onChange={(event) => {
+                fileReadId.current++
+                setReadingFile(false)
                 setCsvText(event.target.value)
+                setFileName("")
                 if (error) setError(null)
               }}
-              className="min-h-[160px] bg-secondary border-border text-foreground placeholder:text-muted-foreground"
+              onDragOver={(event) => {
+                if (!event.dataTransfer.types.includes("Files")) return
+                event.preventDefault()
+                event.dataTransfer.dropEffect = "copy"
+                setIsDragging(true)
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(event) => {
+                if (!event.dataTransfer.types.includes("Files")) return
+                event.preventDefault()
+                setIsDragging(false)
+                void loadFiles(event.dataTransfer.files)
+              }}
+              aria-describedby="csv-help csv-file-status"
+              aria-busy={readingFile}
+              className={`min-h-[160px] bg-secondary text-foreground placeholder:text-muted-foreground ${isDragging ? "border-primary ring-2 ring-primary bg-primary/10" : "border-border"}`}
               required
             />
-            <p className="text-xs text-muted-foreground">
-              Paste comma- or tab-separated data directly from Excel.
+            <div className="flex items-center justify-between gap-3">
+              <p id="csv-help" className="text-xs text-muted-foreground">
+                Drop a CSV here, choose a file, or paste comma- or tab-separated data.
+              </p>
+              <input
+                ref={fileInput}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                tabIndex={-1}
+                aria-label="Choose CSV file"
+                onChange={(event) => {
+                  void loadFiles(event.target.files)
+                  event.target.value = ""
+                }}
+              />
+              <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => fileInput.current?.click()}>
+                Choose file
+              </Button>
+            </div>
+            <p id="csv-file-status" role="status" className="break-all text-xs text-muted-foreground">
+              {readingFile ? "Reading file…" : fileName ? `Loaded ${fileName}` : ""}
             </p>
           </div>
 
@@ -250,7 +339,7 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
           </div>
 
           {error && (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </div>
           )}
@@ -259,12 +348,12 @@ export function AddBatchDialog({ trigger }: AddBatchDialogProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => handleOpenChange(false)}
               className="bg-transparent border-border text-foreground hover:bg-secondary"
             >
               Cancel
             </Button>
-            <Button type="submit" className="bg-primary text-primary-foreground">
+            <Button type="submit" disabled={readingFile} className="bg-primary text-primary-foreground">
               <Upload className="mr-2 h-4 w-4" />
               Import Batch
             </Button>
