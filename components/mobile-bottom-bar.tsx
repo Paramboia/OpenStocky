@@ -1,9 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
-import { RefreshCw, Download, FileSpreadsheet, Plus, Moon, Sun, BookOpen, Info, Trash2 } from "lucide-react"
-import { useTheme } from "next-themes"
+import { RefreshCw, Download, FileSpreadsheet, Plus, BookOpen, Info, Trash2 } from "lucide-react"
 import { useStockPrices } from "@/lib/stock-price-context"
 import { useTransactions } from "@/lib/transactions-store"
 import { AddTransactionDialog } from "@/components/portfolio/add-transaction-dialog"
@@ -13,12 +11,6 @@ import { AddBatchDialog } from "@/components/portfolio/add-batch-dialog"
 export function MobileBottomBar() {
   const { isLoading, refresh } = useStockPrices()
   const transactions = useTransactions()
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const handleExportCsv = () => {
     if (transactions.length === 0) return
@@ -46,8 +38,6 @@ export function MobileBottomBar() {
     link.click()
     URL.revokeObjectURL(url)
   }
-
-  const isDark = mounted ? theme === "dark" : true
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden">
@@ -116,16 +106,6 @@ export function MobileBottomBar() {
               </button>
             }
           />
-
-          <button
-            type="button"
-            onClick={() => setTheme(isDark ? "light" : "dark")}
-            className="flex flex-1 flex-col items-center gap-0.5 py-1 text-muted-foreground transition-colors hover:text-foreground"
-            aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
-          >
-            {isDark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-            <span className="text-[10px] font-medium leading-tight">Theme</span>
-          </button>
         </div>
       </div>
 

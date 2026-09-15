@@ -94,6 +94,10 @@ export function Header() {
           </div>
         </div>
 
+        <div className="shrink-0 sm:hidden">
+          <ThemeToggle />
+        </div>
+
         {/* Desktop action buttons — hidden on mobile */}
         <div className="hidden items-center gap-2 sm:flex sm:gap-3">
           <Button
