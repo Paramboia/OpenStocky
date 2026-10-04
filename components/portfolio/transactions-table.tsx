@@ -295,7 +295,7 @@ export function TransactionsTable() {
                         </button>
                       </div>
                       <div
-                        className="grid grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr_1fr_0.8fr_1fr] items-center gap-0 bg-card px-4 py-4 text-foreground transition-transform duration-200 ease-out hover:bg-secondary/50 md:transition-transform"
+                        className="grid select-none [-webkit-user-select:none] [-webkit-touch-callout:none] grid-cols-[1.2fr_0.9fr_0.9fr_0.9fr_1fr_0.8fr_1fr] items-center gap-0 bg-card px-4 py-4 text-foreground transition-transform duration-200 ease-out hover:bg-secondary/50 md:transition-transform"
                         style={
                           isMobile
                             ? undefined
