@@ -29,28 +29,28 @@ export function PortfolioContent() {
           </div>
 
           <Tabs defaultValue="holdings" className="w-full" role="tablist" aria-label="Holdings and transactions">
-            <TabsList className="bg-secondary border border-border">
+            <TabsList className="w-full bg-secondary border border-border sm:w-auto">
               <TabsTrigger 
                 value="holdings" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
+                className="flex-1 px-1 sm:flex-none sm:px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
               >
                 Holdings
               </TabsTrigger>
               <TabsTrigger 
                 value="market" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
+                className="flex-1 px-1 sm:flex-none sm:px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
               >
                 Market
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
+                className="flex-1 px-1 sm:flex-none sm:px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
               >
                 History
               </TabsTrigger>
               <TabsTrigger 
                 value="transactions" 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
+                className="flex-1 px-1 sm:flex-none sm:px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground"
               >
                 Transactions
               </TabsTrigger>
